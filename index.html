@@ -1,0 +1,2453 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لعبة الكلمات المتساقطة 🌟</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --primary: #2a9d8f;
+      --secondary: #264653;
+      --accent: #e9c46a;
+      --bg: #f4f1de;
+      --text: #22223b;
+      --error: #e63946;
+      --bg-dark: #2b2b2b;
+      --text-dark: #f4f1f4;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+      transition: background .3s, color .3s;
+    }
+
+    html.dark-mode,
+    body.dark-mode {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    .screen {
+      display: none;
+      width: 90%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 0;
+    }
+
+    .active {
+      display: block;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+    }
+
+    html.dark-mode .card,
+    body.dark-mode .card {
+      background: #3b3b3b;
+      color: var(--text-dark);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--secondary);
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background .2s;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background: var(--accent);
+      color: var(--secondary);
+    }
+
+    .btn.incorrect {
+      background: var(--error) !important;
+    }
+
+    .btn.correct {
+      border: 3px solid var(--accent) !important;
+    }
+
+    .stage-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      margin: 6px 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .stage-btn:hover {
+      background: var(--accent);
+    }
+
+    .stars {
+      color: #ffd700;
+      font-size: 1.2rem;
+    }
+
+    #gameContainer {
+      position: relative;
+      height: 50vh;
+      background: #eceae4;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    html.dark-mode #gameContainer,
+    body.dark-mode #gameContainer {
+      background: #4b4b4b;
+    }
+
+    .word {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 16px;
+      background: var(--secondary);
+      color: #fff;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .hearts {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .heart {
+      width: 24px;
+      height: 24px;
+      background: url('data:image/svg+xml;utf8,<svg fill="%23e76f51" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5c0-3.08 2.42-5.5 5.5-5.5c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3c3.08 0 5.5 2.42 5.5 5.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') no-repeat center/contain;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, .6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .modal-content h2 {
+      margin-bottom: 10px;
+      color: var(--secondary);
+    }
+
+    .modal-content .stars {
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+      color: #ffd700;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    html.dark-mode th,
+    body.dark-mode th {
+      background: var(--accent);
+    }
+
+    .confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="confetti" class="confetti-canvas"></canvas>
+
+  <!-- Main Menu -->
+  <div id="mainMenu" class="screen active">
+    <h1>لعبة الكلمات المتساقطة</h1>
+    <div class="card">
+      <button id="btnStats" class="btn">📈 إحصائيات</button>
+      <button id="btnSettings" class="btn">⚙️ إعدادات</button>
+      <button id="btnStart" class="btn">▶️ ابدأ</button>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div id="statsMenu" class="screen">
+    <h1>الإحصائيات</h1>
+    <div class="card" id="shareArea">
+      <p>✅ صحيحة: <span id="statCorrect">0</span></p>
+      <p>❌ خاطئة: <span id="statWrong">0</span></p>
+      <p>📊 نجاح: <span id="statRate">0%</span></p>
+      <p>📉 خطأ: <span id="statFail">0%</span></p>
+      <p>🏅 إجمالي النقاط: <span id="totalPts">0</span></p>
+      <p>🏆 أعلى نتيجة: <span id="bestPts">0</span></p>
+    </div>
+    <div class="card">
+      <h3>🗂️ أخطاء إنجليزي-عربي</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>الكلمة</th>
+            <th>المعنى</th>
+            <th>عدد</th>
+          </tr>
+        </thead>
+        <tbody id="errorsAr">
+          <tr>
+            <td colspan="3">-</td>
+          </tr>
+        </tbody>
+      </table>
+      <button id="btnQuizAr" class="btn">📝 اختبار </button>
+    </div>
+    <div class="card">
+      <h3>🗂️ أخطاء إنجليزي-إنجليزي</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Word</th>
+            <th>Meaning</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+        <tbody id="errorsEn">
+          <tr>
+            <td colspan="3">-</td>
+          </tr>
+        </tbody>
+      </table>
+      <button id="btnQuizEn" class="btn">📝 اختبار </button>
+    </div>
+    <div class="card">
+      <button id="btnShareStats" class="btn">📤 مشاركة</button>
+      <button id="btnBackStats" class="btn">🔙 الرئيسية</button>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settingsMenu" class="screen">
+    <h1>الإعدادات</h1>
+    <div class="card">
+      <label><input type="checkbox" id="toggleDark" /> ثيم داكن</label>
+      <label>🔉 مستوى الصوت: <input type="range" id="controlVol" min="0" max="1" step="0.05" value="1" /></label>
+      <button id="btnBackSettings" class="btn">🔙 الرئيسية</button>
+    </div>
+  </div>
+
+  <!-- Language -->
+  <div id="langMenu" class="screen">
+    <h1>اختر اللغة</h1>
+    <div class="card">
+      <button data-lang="arabic" class="btn langBtn">إنجليزي 🠚 عربي</button>
+      <button data-lang="english" class="btn langBtn">إنجليزي 🠚 إنجليزي</button>
+      <button id="btnBackLang" class="btn">🔙 الرئيسية</button>
+    </div>
+  </div>
+
+  <!-- Stage -->
+  <div id="stageMenu" class="screen">
+    <h1>اختر المرحلة</h1>
+    <div class="card" id="stageList"></div>
+    <button id="btnBackStage" class="btn">🔙 الرئيسية</button>
+  </div>
+
+  <!-- Difficulty -->
+  <div id="diffMenu" class="screen">
+    <h1>اختر الصعوبة</h1>
+    <div class="card">
+      <button data-diff="easy" class="btn diffBtn">سهل 🐢</button>
+      <button data-diff="medium" class="btn diffBtn">متوسط 🚶</button>
+      <button data-diff="hard" class="btn diffBtn">صعب 🏃</button>
+      <button id="btnBackDiff" class="btn">🔙 المرحلة</button>
+    </div>
+  </div>
+
+  <!-- Game -->
+  <div id="gameMenu" class="screen">
+    <h1>اللعب</h1>
+    <div class="card">
+      <div class="hearts" id="heartContainer"></div>
+      <div id="gameContainer"></div>
+      <div class="choices" id="choicesContainer"></div>
+      <p style="text-align:center;">النقاط: <span id="scoreDisp">0</span> | مضاعف: <span id="multDisp">1.0</span></p>
+      <button id="btnRestart" class="btn">🔄 إعادة</button>
+      <button id="btnHome" class="btn">🏠 الرئيسية</button>
+    </div>
+  </div>
+
+  <!-- End Modal -->
+  <div id="endModal" class="modal">
+    <div class="modal-content">
+      <h2 id="modalTitle"></h2>
+      <p id="modalMsg"></p>
+      <div class="stars" id="modalStars"></div>
+      <button id="btnRetry" class="btn">إعادة</button>
+      <button id="btnMain" class="btn">🔙 الرئيسية</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Data & state
+      const stages = {
+        arabic: {
+          "المرحلة الأولى": [
+            { en: "Collocations", ar: "متلازمات لغوية" },
+            { en: "convey", ar: "ينقل" },
+            { en: "contact/communicate", ar: "يتواصل" },
+            { en: "spread", ar: "ينشر" },
+            { en: "emotion", ar: "مشاعر" },
+            { en: "carry", ar: "يحمل" },
+            { en: "interview", ar: "مقابلة" },
+            { en: "stuck", ar: "عالق" },
+            { en: "intelligence", ar: "ذكاء" },
+            { en: "dawn", ar: "فجر" },
+            { en: "expressing", ar: "تعبير" },
+            { en: "ancient", ar: "قديم" },
+            { en: "telegrams", ar: "برقيات/ رسائل" },
+            { en: "smoke", ar: "دخان" },
+            { en: "analytical essay", ar: "مقال تحليلي" },
+            { en: "invented", ar: "اخترع" },
+            { en: "presenting", ar: "تقديم" },
+            { en: "ingenious", ar: "عبقري" },
+            { en: "conversations", ar: "محادثة" },
+            { en: "methods", ar: "طرق/وسائل" },
+            { en: "vocabulary", ar: "مفردات" },
+            { en: "at the turn of", ar: "في مطلع" },
+            { en: "nowadays", ar: "هذه الأيام" },
+            { en: "on board the", ar: "على متن" },
+            { en: "come to light", ar: "ظهر/برز" },
+            { en: "establish", ar: "ينشِئ" },
+            { en: "swede", ar: "سويديّ" },
+            { en: "maintain", ar: "يحافظ" },
+            { en: "tossed", ar: "قذف/ رمى" },
+            { en: "pass on", ar: "يمرر" },
+            { en: "sicilian", ar: "صقلية(جزيرة إيطالية)" },
+            { en: "means", ar: "وسائل" },
+            { en: "sped up", ar: "سرّع" },
+            { en: "generally", ar: "عمومًا" },
+            { en: "dramatically", ar: "بشكل كبير" },
+            { en: "during", ar: "خلال" }
+          ],
+          "المرحلة الثانية": [
+            { en: "population", ar: "سكان" },
+            { en: "specific", ar: "محدد" },
+            { en: "doubt", ar: "شك" },
+            { en: "interrupted", ar: "قاطع" },
+            { en: "spotted", ar: "لاحظ" },
+            { en: "period", ar: "فترة" },
+            { en: "daughter", ar: "ابنة" },
+            { en: "time expressions", ar: "دلالات زمنية" },
+            { en: "turned out", ar: "توصل/استنتج" },
+            { en: "currently", ar: "حاليًا" },
+            { en: "disease", ar: "مرض" },
+            { en: "ever since", ar: "منذ ذلك الحين" },
+            { en: "sight", ar: "بصر" },
+            { en: "run a business", ar: "يدير عملًا" },
+            { en: "suddenly", ar: "فجأة" },
+            { en: "perhaps", ar: "ربما" },
+            { en: "went out", ar: "انطفأ" },
+            { en: "come across", ar: "يعثر/يصادف" },
+            { en: "critical thinking", ar: "التفكير الناقد" },
+            { en: "observing", ar: "مراقبة" },
+            { en: "author", ar: "مؤلف" },
+            { en: "immediately", ar: "فورًا" },
+            { en: "instructions", ar: "تعليمات" },
+            { en: "shores", ar: "شواطئ" },
+            { en: "although", ar: "رغم  ذلك" },
+            { en: "make out", ar: "يسمع/يرى" },
+            { en: "figure out", ar: "يفهم/ يستنتج" },
+            { en: "likely", ar: "من المحتمل" },
+            { en: "assumed", ar: "افتراض/ افترض" },
+            { en: "gained", ar: "كسب" },
+            { en: "naturalist", ar: "عالم الطبيعة" },
+            { en: "wipe out", ar: "يقصي/ يدمر" },
+            { en: "take in", ar: "يستوعب" },
+            { en: "rival", ar: "منافس" },
+            { en: "get across", ar: "يعبر/ يوضح" },
+            { en: "groom", ar: "ينظف" }
+          ],
+          "المرحلة الثالثة": [
+            { en: "complex", ar: "معقد" },
+            { en: "probability", ar: "احتمالية" },
+            { en: "fictional", ar: "خيالي" },
+            { en: "rather than", ar: "بدلًا من" },
+            { en: "as well as", ar: "بالإضافة إلى" },
+            { en: "uncritically", ar: "غير مؤكد" },
+            { en: "argument", ar: "جدال" },
+            { en: "disciplined", ar: "يأدب/ منضبط" },
+            { en: "point out", ar: "يشير/ يلمح" },
+            { en: "minds", ar: "أفكار" },
+            { en: "sign language", ar: "لغة الإشارة" },
+            { en: "embarrassed", ar: "يشعر بالإحراج" },
+            { en: "spell out", ar: "يوضح/يبين" },
+            { en: "went into", ar: "ذهب إلى" },
+            { en: "went on", ar: "استمر" },
+            { en: "idioms", ar: "تعابير" },
+            { en: "omnivores", ar: "لاحم و عاشب" },
+            { en: "work out", ar: "يكتشف/يحل" },
+            { en: "vegetarian", ar: "نباتي" },
+            { en: "favourable", ar: "إيجابي/ ملائم" },
+            { en: "bring about", ar: "ينجز/ يحقق" },
+            { en: "impression", ar: "انطباع" },
+            { en: "pick up", ar: "يلتقط" },
+            { en: "strike up", ar: "يبدأ" },
+            { en: "glossary", ar: "معجم/قاموس" },
+            { en: "bond", ar: "رابطة" },
+            { en: "compete", ar: "يتنافس" },
+            { en: "sincere", ar: "صادق" },
+            { en: "point of view", ar: "وجهة نظر" },
+            { en: "and so on", ar: "و هلمّ جرًا" },
+            { en: "to signal", ar: "يشير" },
+            { en: "come across as", ar: "يبدو" },
+            { en: "e.g.", ar: "على سبيل المثال" },
+            { en: "fixed", ar: "ثابت" },
+            { en: "subtly", ar: "بمهارة" },
+            { en: "individual", ar: "فردي" }
+          ],
+          "المرحلة الرابعة": [
+            { en: "refuse", ar: "يرفض" },
+            { en: "thrilled", ar: "سعيد/متحمس" },
+            { en: "insist", ar: "يصرّ" },
+            { en: "synonyms", ar: "مترادفات" },
+            { en: "edgeways", ar: "حواف" },
+            { en: "terrified", ar: "مرتب/خائف" },
+            { en: "reflect", ar: "يفكر/يعكس/يتأمل" },
+            { en: "frightened", ar: "مرتب/خائف" },
+            { en: "dialogue", ar: "حوار" },
+            { en: "astonished", ar: "مندهش/متفاجئ" },
+            { en: "such", ar: "هذه/هذا/مثل" },
+            { en: "exasperated", ar: "منزعج" },
+            { en: "fussy", ar: "صعب الإرضاء" },
+            { en: "livid", ar: "غاضب" },
+            { en: "auxiliary verb", ar: "فعل مساعد" },
+            { en: "tense", ar: "متوتر" },
+            { en: "pronunciation", ar: "النطق/اللفظ" },
+            { en: "ecstatic", ar: "سعيد/متحمس" },
+            { en: "intonation", ar: "نغمة" },
+            { en: "bewildered", ar: "حائر" },
+            { en: "silly", ar: "سخيف" },
+            { en: "devastated", ar: "حزين/مدمَّر" },
+            { en: "italics", ar: "مائل(الخط)" },
+            { en: "absolutely", ar: "قطعًا" },
+            { en: "gap", ar: "فراغ/فجوة" },
+            { en: "IQ", ar: "معدل الذكاء" },
+            { en: "I bet", ar: "أنا أراهن" },
+            { en: "EQ", ar: "الذكاء العاطفي" },
+            { en: "quite", ar: "جدًا/تمامًا" },
+            { en: "self-aware", ar: "واعٍ بذاته" },
+            { en: "annoyed", ar: "منزعج" },
+            { en: "recognise", ar: "يتعرف على/يميز" },
+            { en: "confused", ar: "مرتبك" },
+            { en: "certain", ar: "مؤكد" },
+            { en: "furious", ar: "غاضب" },
+            { en: "nodding", ar: "حرك رأسه/أومأ" }
+          ],
+          "المرحلة الخامسة": [
+            { en: "demonstrate", ar: "يوضح" },
+            { en: "horrible", ar: "مروع" },
+            { en: "avoid", ar: "يتجنب" },
+            { en: "fed up with", ar: "ملل من / سئم من" },
+            { en: "aspects", ar: "أوجه/نواحي" },
+            { en: "gossiping", ar: "نميمة" },
+            { en: "further", ar: "إضافي" },
+            { en: "according to", ar: "وفقاً لـِ" },
+            { en: "benefits", ar: "منافع/فوائد" },
+            { en: "pleasure", ar: "سرور" },
+            { en: "heartbroken", ar: "مكسور القلب(حزين)" },
+            { en: "compare", ar: "يقارن" },
+            { en: "relief", ar: "إغاثة / راحة" },
+            { en: "Artificial Intelligence", ar: "ذكاء اصطناعي" },
+            { en: "sigh", ar: "تنهد" },
+            { en: "refers to", ar: "يقصد" },
+            { en: "frustration", ar: "إحباط" },
+            { en: "cures", ar: "يعالج/ علاجات" },
+            { en: "kidding", ar: "مزاح" },
+            { en: "interests", ar: "اهتمامات" },
+            { en: "dumps", ar: "مكبات نفايات" },
+            { en: "hobbies", ar: "هوايات" },
+            { en: "enjoyment", ar: "استمتاع" },
+            { en: "identify", ar: "يتعرف / يُعرف" },
+            { en: "suitable", ar: "مناسب" },
+            { en: "advertising", ar: "ترويج" },
+            { en: "response", ar: "رد/استجابه" },
+            { en: "sensibly", ar: "بحساسية" },
+            { en: "blame", ar: "يلوم" },
+            { en: "UNIDO", ar: "منظمة الأمم المتحدة للتنمية الصناعية" },
+            { en: "pleased", ar: "مسرور / راضٍ" },
+            { en: "industries", ar: "صناعات" },
+            { en: "concerned", ar: "مهتم / قلق" },
+            { en: "forefront", ar: "صدارة / مقدمة" },
+            { en: "awful", ar: "رهيب / فظيع" },
+            { en: "regulated", ar: "منظم" }
+          ],
+          "المرحلة السادسة": [
+            { en: "looking into", ar: "دراسة / تحقق من" },
+            { en: "crucial", ar: "ضروري" },
+            { en: "investment", ar: "استثمار" },
+            { en: "vehicle", ar: "وسيلة/مركبة" },
+            { en: "government", ar: "حكومة" },
+            { en: "permitted", ar: "مسموح له" },
+            { en: "increased", ar: "ازدادت" },
+            { en: "command", ar: "إتقان" },
+            { en: "consequently", ar: "وبالتالي" },
+            { en: "break the ice", ar: "كسر الحواجز" },
+            { en: "regulations", ar: "تنظيمات" },
+            { en: "emerging", ar: "يتصاعد / مستجد" },
+            { en: "to address", ar: "يخاطب" },
+            { en: "prioritized", ar: "تحظى بالأولوية" },
+            { en: "strictly", ar: "بصرامة" },
+            { en: "considered", ar: "معتبَر" },
+            { en: "argues", ar: "يجادل / يحتج" },
+            { en: "career", ar: "مهنة" },
+            { en: "unless", ar: "إلا اذا" },
+            { en: "religion", ar: "ديانة" },
+            { en: "revision", ar: "مراجعة" },
+            { en: "ideal", ar: "مثالي" },
+            { en: "conversation", ar: "محادثة" },
+            { en: "upon", ar: "على" },
+            { en: "hazardous", ar: "خطير" },
+            { en: "primary", ar: "أساسي" },
+            { en: "compliment", ar: "إطراء" },
+            { en: "promoting", ar: "ترقية / ترويج" },
+            { en: "complement", ar: "تكملة" },
+            { en: "genuinely", ar: "بصدق" },
+            { en: "lingua franca", ar: "لغة مشتركة" },
+            { en: "bother", ar: "إزعاج" },
+            { en: "subsequently", ar: "لاحقاً" },
+            { en: "vast", ar: "اكثرية" },
+            { en: "dominate", ar: "يستحوذ" },
+            { en: "fluency", ar: "بطلاقة" }
+          ],
+          "المرحلة السابعة": [
+            { en: "burglary", ar: "سطو / سرقة" },
+            { en: "generous", ar: "كريم" },
+            { en: "innocent", ar: "بريء" },
+            { en: "historical importance", ar: "أهمية تاريخية" },
+            { en: "interrupt", ar: "يقاطع" },
+            { en: "memo", ar: "مذكرة" },
+            { en: "nevertheless", ar: "ومع ذلك" },
+            { en: "hieroglyphics", ar: "الكتابة الهيروغليفية" },
+            { en: "include", ar: "يتضمن" },
+            { en: "support", ar: "دعم" },
+            { en: "landlines telephone", ar: "هواتف ارضية" },
+            { en: "monuments", ar: "نصب تذكارية" },
+            { en: "concentrate", ar: "يُركز" },
+            { en: "elderly", ar: "كبار السن" },
+            { en: "lonliness", ar: "الشعور بالوحدة" },
+            { en: "manuscripts", ar: "مخطوطات" },
+            { en: "Self-assessment", ar: "تقييم الذات" },
+            { en: "scholars", ar: "علماء" },
+            { en: "improve", ar: "تحسين" },
+            { en: "struggle", ar: "يعاني / يكافح" },
+            { en: "endlessly", ar: "بلا نهاية" },
+            { en: "medieval", ar: "قرون وسطى" },
+            { en: "tax", ar: "ضريبة" },
+            { en: "contemporary", ar: "معاصر" },
+            { en: "tale", ar: "قصة" },
+            { en: "museum exhibit", ar: "معرض متحف" },
+            { en: "pharaoh", ar: "فرعون" },
+            { en: "significant", ar: "ذو أهمية" },
+            { en: "chaos", ar: "فوضى" },
+            { en: "a disappointment", ar: "خيبة أمل" },
+            { en: "priests", ar: "كهنة" },
+            { en: "dull", ar: "ممل" },
+            { en: "Rosetta Stone", ar: "حجر رشيد" },
+            { en: "administrative", ar: "إداري" },
+            { en: "temples", ar: "معابد" },
+            { en: "multilingual", ar: "متعدد اللغات" }
+          ],
+          "المرحلة الثامنة": [
+            { en: "Shirt", ar: "قميص" },
+            { en: "Pants", ar: "بنطلون" },
+            { en: "Shoe", ar: "حذاء" },
+            { en: "Hat", ar: "قبعة" },
+            { en: "Dress", ar: "فستان" }
+          ],
+          "المرحلة التاسعة": [
+            { en: "Compound nouns", ar: "الأسماء المركبة" },
+            { en: "proportion", ar: "مقدار" },
+            { en: "threats", ar: "تهديدات" },
+            { en: "poverty", ar: "فقر" },
+            { en: "reduction", ar: "تخفيض/تقليل" },
+            { en: "decades", ar: "عقود" },
+            { en: "predictions", ar: "تنبؤات" },
+            { en: "key reason", ar: "السبب الرئيسي" },
+            { en: "lecture", ar: "محاضرة" },
+            { en: "accidents", ar: "حوادث" },
+            { en: "climate", ar: "المناخ" },
+            { en: "driverless", ar: "ذاتية القيادة" },
+            { en: "formal email", ar: "بريد الكتروني رسمي" },
+            { en: "common", ar: "شائع/مشترك" },
+            { en: "extinction", ar: "انقراض" },
+            { en: "life expectancy", ar: "متوسط العمر المتوقع" },
+            { en: "presentation", ar: "عرض تقديمي" },
+            { en: "medicine", ar: "طب/دواء" },
+            { en: "definition", ar: "تعريف" },
+            { en: "terrifying", ar: "مريع/مخيف" },
+            { en: "discuss", ar: "تناقش" },
+            { en: "assume", ar: "يفترض" },
+            { en: "pairs", ar: "ازواج" },
+            { en: "pattern", ar: "نمط" },
+            { en: "magazine", ar: "مجلة" },
+            { en: "unlikely to", ar: "من غير المحتمل" },
+            { en: "dystopia", ar: "عالم بائس" },
+            { en: "advances", ar: "تطورات" },
+            { en: "bright", ar: "ساطع" },
+            { en: "eliminate", ar: "يقضي على" },
+            { en: "dropping steadly", ar: "ينخفض بثبات" },
+            { en: "types", ar: "أنواع" },
+            { en: "due to", ar: "بسبب" },
+            { en: "oil", ar: "نفط" },
+            { en: "education", ar: "التعليم" },
+            { en: "Blistering", ar: "شديد/حارق" }
+          ],
+          "المرحلة العاشرة": [
+            { en: "Freak", ar: "غير معتاد" },
+            { en: "traffic jams", ar: "الازدحامات المرورية" },
+            { en: "Already been said", ar: "سبق قوله" },
+            { en: "current", ar: "حالي" },
+            { en: "Scorching", ar: "شديدة الحرارة" },
+            { en: "warmer", ar: "اكثر دفئاً" },
+            { en: "Soaring", ar: "مرتفع" },
+            { en: "Gradual", ar: "تدريجي" },
+            { en: "Sub-zero", ar: "تحت الصفر" },
+            { en: "Solar activity", ar: "النشاط الشمسي" },
+            { en: "Torrential", ar: "غزير جداً" },
+            { en: "Carbon dioxide", ar: "ثاني أكسيد الكربون" },
+            { en: "Cause", ar: "يسبب" },
+            { en: "synthetic", ar: "اصطناعي" },
+            { en: "Rather than", ar: "بدلاً من" },
+            { en: "Individuals", ar: "افراد" },
+            { en: "Human beings", ar: "البشر" },
+            { en: "Funding", ar: "تمويل" },
+            { en: "Agree", ar: "يوافق" },
+            { en: "Preservation", ar: "الحفاظ" },
+            { en: "Match", ar: "يطابق" },
+            { en: "Perceived", ar: "يُعتبر / يُنظر إليه" },
+            { en: "Indicating", ar: "يشير إلى" },
+            { en: "Useful", ar: "مفيد" },
+            { en: "Paraphrase", ar: "إعادة صياغة" },
+            { en: "Belief", ar: "اعتقاد" },
+            { en: "Concluding", ar: "الاستنتاج / الخاتمة" },
+            { en: "Sign", ar: "علامة" },
+            { en: "Another example", ar: "مثال آخر" },
+            { en: "Physical features", ar: "السمات الجسدية" },
+            { en: "Relates to", ar: "يتعلق بـ" },
+            { en: "Extreme environment", ar: "بيئة قاسية" },
+            { en: "Gale-force", ar: "شديدة القوة (تستخدم للرياح)" },
+            { en: "Wildlife conservation", ar: "الحفاظ على الحياة البرية" },
+            { en: "gap", ar: "فجوة" },
+            { en: "Institutions", ar: "مؤسسات" }
+          ],
+          "المرحلة الحادية عشر": [
+            { en: "symbol", ar: "رمز" },
+            { en: "giant panda", ar: "الباندا العملاق" },
+            { en: "critically endangered", ar: "مهدد بالانقراض بشدة" },
+            { en: "popularity", ar: "الشعبية" },
+            { en: "invertebrates", ar: "اللافقريات" },
+            { en: "raise money", ar: "جمع الأموال" },
+            { en: "percentage", ar: "نسبه مئوية" },
+            { en: "disgusting", ar: "مقزز" },
+            { en: "marine creature", ar: "مخلوق بحري" },
+            { en: "attention", ar: "اهتمام" },
+            { en: "skeleton", ar: "هيكل عظمي" },
+            { en: "backbone", ar: "العمود الفقري" },
+            { en: "crustaceans", ar: "قشريات" },
+            { en: "scheduled", ar: "مجدول" },
+            { en: "peachers", ar: "الصيادين غير الشرعيين" },
+            { en: "positively ugly", ar: "قبيحة للغاية" },
+            { en: "reptile", ar: "زاحف" },
+            { en: "slimy", ar: "لزج" },
+            { en: "highly prized", ar: "ذو قيمة عالية" },
+            { en: "attractive", ar: "جذاب" },
+            { en: "natural predators", ar: "مفترسات طبيعية" },
+            { en: "bound to", ar: "من المؤكد أن" },
+            { en: "solitary creatures", ar: "مخلوقات انفرادية" },
+            { en: "fins", ar: "زعانف" },
+            { en: "nocturnal", ar: "ليلي" },
+            { en: "sweep into the nets", ar: "ينجرفون الى الشباك" },
+            { en: "WWF(world wildlife fund)", ar: "الصندوق العالمي للطبيعة" },
+            { en: "think back", ar: "تذكر" },
+            { en: "targeted", ar: "مستهدف" },
+            { en: "verb form", ar: "صيغة الفعل" },
+            { en: "scales", ar: "حراشف" },
+            { en: "evidence", ar: "دليل" },
+            { en: "cuddly", ar: "لطيف" },
+            { en: "specific point", ar: "نقطة محددة" },
+            { en: "pressure", ar: "الضغط" },
+            { en: "completed", ar: "مكتمل" }
+          ],
+          "المرحلة الثانية عشر": [
+            { en: "progress", ar: "تقدم" },
+            { en: "deforestations", ar: "قطع الأشجار(التصحر)" },
+            { en: "society", ar: "مجتمع" },
+            { en: "retire", ar: "يتقاعد" },
+            { en: "acid rain", ar: "مطر حمضي" },
+            { en: "exist", ar: "يتواجد" },
+            { en: "fossil fuel", ar: "وقود احفوري" },
+            { en: "Recognise", ar: "يتعرف على" },
+            { en: "global warming", ar: "احتباس حراري" },
+            { en: "smartwatches", ar: "الساعات الذكية" },
+            { en: "habitat loss", ar: "فقدان الموائل" },
+            { en: "Software", ar: "البرمجيات" },
+            { en: "Endangered species", ar: "الأنواع المهددة بالنقراض" },
+            { en: "Reference", ar: "مرجع" },
+            { en: "exhaust fumes", ar: "عوادم السيارات" },
+            { en: "Practice", ar: "ممارسة" },
+            { en: "renewable energy", ar: "طاقه متجددة" },
+            { en: "Rewrite", ar: "اعادة كتابة" },
+            { en: "toxic waste", ar: "النفايات السامة" },
+            { en: "Phrases", ar: "عبارات" },
+            { en: "ozone layer", ar: "طبقه الأوزون" },
+            { en: "Consequence", ar: "العواقب" },
+            { en: "water scarcity", ar: "شح المياه" },
+            { en: "variety", ar: "تنوع" },
+            { en: "wind turbine", ar: "توربين الرياح" },
+            { en: "Erosion", ar: "التعرية" },
+            { en: "pollutants", ar: "الملوثات" },
+            { en: "Sealed containers", ar: "حاويات محكمة الاغلاق" },
+            { en: "climate change", ar: "تغير المناخ" },
+            { en: "Atmosphere", ar: "غلاف جوي" },
+            { en: "arrange", ar: "ترتيب" },
+            { en: "Urgent", ar: "عاجل" },
+            { en: "Schedule", ar: "جدول زمني" },
+            { en: "Behaviour", ar: "سلوك" },
+            { en: "Opportunity", ar: "فرصة" },
+            { en: "Affect", ar: "يؤثر على" }
+          ],
+          "المرحلة الثالثة عشر": [
+            { en: "Underline", ar: "ضع خط أسفل" },
+            { en: "Purchased", ar: "تم شراؤه" },
+            { en: "Active vocabulary", ar: "المفردات النشطة" },
+            { en: "Garment", ar: "ملابس / ثوب" },
+            { en: "Competition", ar: "مسابقة/تنافس" },
+            { en: "Fabric", ar: "قماش" },
+            { en: "Committee", ar: "لجنة" },
+            { en: "Generate", ar: "يُنتج / يُولّد" },
+            { en: "Expressing indecision", ar: "التعبير عن التردد" },
+            { en: "Infographic", ar: "مخطط معلوماتي" },
+            { en: "Agreement", ar: "اتفاق" },
+            { en: "Statistic", ar: "إحصائية" },
+            { en: "Decision", ar: "قرار" },
+            { en: "Denim", ar: "قماش الدنيم (الجينز)" },
+            { en: "Motivate", ar: "يحفز / يشجع" },
+            { en: "Cotton", ar: "قطن" },
+            { en: "Original", ar: "أصلي / مبتكر" },
+            { en: "Customize", ar: "يُخصص / يعدّل" },
+            { en: "Inspire", ar: "يُلهم" },
+            { en: "Recycling", ar: "إعادة التدوير" },
+            { en: "Effort", ar: "جهد" },
+            { en: "Shop window display", ar: "عرض نافذة المتجر" },
+            { en: "Reusable", ar: "قابل لإعادة الاستخدام" },
+            { en: "Arrangement", ar: "ترتيب / تنسيق" },
+            { en: "Concept", ar: "مفهوم" },
+            { en: "Timetabled", ar: "مُجَدول" },
+            { en: "Impact", ar: "تأثير" },
+            { en: "Official", ar: "رسمي" },
+            { en: "Prefer", ar: "يُفضّل" },
+            { en: "Command", ar: "أمر" },
+            { en: "Poster", ar: "ملصق" },
+            { en: "Expert", ar: "خبير" },
+            { en: "Production", ar: "إنتاج" },
+            { en: "Auditorium", ar: "قاعة محاضرات" },
+            { en: "Consumer", ar: "مستهلك" },
+            { en: "Due to", ar: " بسبب / من المقرر أن" }
+          ],
+          "المرحلة الرابعة عشر": [
+            { en: "Pressing", ar: "مُلح / عاجل" },
+            { en: "recipient", ar: "المستلِم / المتلقِّي" },
+            { en: "Contribute", ar: "يُساهم" },
+            { en: "constructions", ar: "التراكيب اللغوية" },
+            { en: "Biodegradable", ar: "قابل للتحلل" },
+            { en: "disposable", ar: "يمكن التخلُّص منه" },
+            { en: "structure", ar: "هيكل / بنية" },
+            { en: "vital", ar: "حيوي / أساسي" },
+            { en: "Landfill", ar: "مكب النفايات" },
+            { en: "hypothetical", ar: "افتراضي" },
+            { en: "Prevent", ar: "يمنع" },
+            { en: "Critical", ar: "حرج" },
+            { en: "Sustainable", ar: "مستدام" },
+            { en: "Commitment", ar: "التزام" },
+            { en: "Alternative", ar: "بديل" },
+            { en: "Challenge", ar: "تحدي" },
+            { en: "Urgency", ar: "إلحاح / استعجال" },
+            { en: "Efficient", ar: "فعال" },
+            { en: "Tackle", ar: "يتعامل مع / يعالج" },
+            { en: "Aisle", ar: "ممر" },
+            { en: "freezing", ar: "متجمد" },
+            { en: "Ethical", ar: "أخلاقي" },
+            { en: "Greenhouse", ar: "دفيئة" },
+            { en: "scientists", ar: "علماء" },
+            { en: "Conservation", ar: "حفظ" },
+            { en: "Win over", ar: "يكسب تأييد" },
+            { en: "innovative", ar: "مبتكر" },
+            { en: "Consider", ar: "يأخذ بعين الاعتبار" },
+            { en: "packaging", ar: "تغليف" },
+            { en: "Faithfully", ar: "بإخلاص" },
+            { en: "contributing", ar: "مساهمة" },
+            { en: "Cardboard", ar: "كرتون" },
+            { en: "significant", ar: "مهم" },
+            { en: "conventions", ar: "القواعد / الأعراف" },
+            { en: "detoxification", ar: "إزالة السموم" }
+          ],
+          "المرحلة الخامسة عشر": [
+            { en: "man", ar: "الإنسان(رجل)" },
+            { en: "series", ar: "سلسلة" },
+            { en: "relaxing", ar: "الاسترخاء" },
+            { en: "mission", ar: "المهمة" },
+            { en: "entrance", ar: "المدخل" },
+            { en: "explore", ar: "المستكشف" },
+            { en: "brackets", ar: "الأقواس" },
+            { en: "planet", ar: "الكوكب" },
+            { en: "decrease", ar: "ينخفض" },
+            { en: "launch", ar: "الإطلاق" },
+            { en: "Exercise", ar: "تمرين" },
+            { en: "crew", ar: "الطاقم" },
+            { en: "conditions", ar: "الظروف" },
+            { en: "factfile", ar: "مجموعة معلومات" },
+            { en: "developing", ar: "النامية" },
+            { en: "qualify", ar: "مؤهل" },
+            { en: "optimistic", ar: "متفائل" },
+            { en: "surgeon", ar: "جراح" },
+            { en: "doubt", ar: "شك" },
+            { en: "deadline", ar: "الموعد النهائي" },
+            { en: "crime", ar: "الجريمة" },
+            { en: "cancer", ar: "السرطان" },
+            { en: "figures", ar: "أرقام/إحصاءات/ شخصيات" },
+            { en: "astrophysics", ar: "الفيزياء الفلكية" },
+            { en: "Mars", ar: "المريخ" },
+            { en: "rail pass", ar: "بطاقة السكك الحديدية" },
+            { en: "apologise", ar: "يعتذر/ اعتذار" },
+            { en: "prepare", ar: "حضّر/ أعد" },
+            { en: "definitely", ar: "قطعًا/ بالتأكيد" },
+            { en: "journey", ar: "رحلة" },
+            { en: "probably", ar: "ربما" },
+            { en: "statements", ar: "عبارات/ تصريحات" },
+            { en: "control", ar: "السيطرة" },
+            { en: "course", ar: "دورة/ مسار" },
+            { en: "society", ar: "المجتمع" },
+            { en: "Coal", ar: "فحم" }
+          ],
+          "المرحلة السادسة عشر": [
+            { en: "disappearance", ar: "زوال/ اختفاء" },
+            { en: "pesticides", ar: "مبيدات" },
+            { en: "Poisonous", ar: "سام" },
+            { en: "field", ar: "حقل" },
+            { en: "transport", ar: "نقل/ مواصلات" },
+            { en: "criticising", ar: "انتقاد" },
+            { en: "chemicals", ar: "الكيماويات" },
+            { en: "temper", ar: "مزاج" },
+            { en: "harmful", ar: "ضار" },
+            { en: "prioritising", ar: "إعطاء الأولوية" },
+            { en: "amount", ar: "كمية/ مبلغ" },
+            { en: "ethical", ar: "أخلاقي" },
+            { en: "ultraviolet radiation", ar: "اللأشعة فوق البنفسجية" },
+            { en: "values", ar: "قيم" },
+            { en: "trapped", ar: "محتجز/ محصور" },
+            { en: "typically", ar: "عادةً" },
+            { en: "industrial waste", ar: "النفايات الصناعية" },
+            { en: "guaranteed", ar: "مضمون" },
+            { en: "destruction", ar: "دمار" },
+            { en: "matador", ar: "مصارع الثيران" },
+            { en: "impact", ar: "تأثير" },
+            { en: "charge", ar: "يندفع" },
+            { en: "choices", ar: "اختيارات" },
+            { en: "crawling", ar: "زحف" },
+            { en: "eco-fashion", ar: "الموضة البيئية" },
+            { en: "thorough", ar: "شامل" },
+            { en: "ruining", ar: "إفساد" },
+            { en: "nocturnal", ar: "ليلي" },
+            { en: "mentioned", ar: "مذكور" },
+            { en: "echolocation", ar: "تحديد الموقع بالصدى" },
+            { en: "corruption", ar: "فساد" },
+            { en: "navigate", ar: "يتنقل" },
+            { en: "manufacturing", ar: "التصنيع" },
+            { en: "scientific", ar: "علمي" },
+            { en: "multinational", ar: "متعدد الجنسيات" },
+            { en: "irresistibly", ar: "بشكل لا يقاوم" }
+          ],
+          "المرحلة السابعة عشر": [
+            { en: "tortoise", ar: "سلحفاة" },
+            { en: "earthworm", ar: "دودة الأرض" },
+            { en: "underground", ar: "تحت الأرض" },
+            { en: "injury", ar: "إصابة" },
+            { en: "bury", ar: "يدفن" },
+            { en: "separate", ar: "منفصل" },
+            { en: "ignore", ar: "يتجاهل" },
+            { en: "survive", ar: "ينجو" },
+            { en: "brain function", ar: "وظيفة الدماغ" },
+            { en: "furry", ar: "فروي" },
+            { en: "vision deficiency", ar: "ضعف البصر" },
+            { en: "peaceful", ar: "هادئ" },
+            { en: "concealed", ar: "مخفي" },
+            { en: "curious", ar: "فضولي" },
+            { en: "experiments", ar: "تجارب" },
+            { en: "Track", ar: "مسار" },
+            { en: "detect", ar: "يكتشف" },
+            { en: "humidity", ar: "رطوبة" },
+            { en: "reveal", ar: "يكشف" },
+            { en: "Torn", ar: "ممزق" },
+            { en: "owl", ar: "بومة" },
+            { en: "Fence", ar: "سياج" },
+            { en: "myths", ar: "أساطير" },
+            { en: "Make up my mind", ar: "اتخاذ قرار" },
+            { en: "hunting", ar: "صيد" },
+            { en: "On the one hand", ar: "من جهة" },
+            { en: "insects", ar: "حشرات" },
+            { en: "Grab", ar: "جذب" },
+            { en: "attracted", ar: "منجذب" },
+            { en: "Swap", ar: "تبادل" },
+            { en: "reaction", ar: "رد فعل" },
+            { en: "Caption", ar: "تعليق" },
+            { en: "misinterpreted", ar: "أسيء تفسيره" },
+            { en: "Fundraising", ar: "جمع التبرعات" },
+            { en: "rumors", ar: "شائعات" },
+            { en: "Visual", ar: "مرئي" }
+          ],
+          "المرحلة الثامنة عشر": [
+            { en: "Football", ar: "كرة القدم" },
+            { en: "Basketball", ar: "كرة السلة" },
+            { en: "Tennis", ar: "التنس" },
+            { en: "Swimming", ar: "السباحة" },
+            { en: "Running", ar: "الجري" }
+          ],
+          "المرحلة التاسعة عشر": [
+            { en: "Influences", ar: "التأثيرات" },
+            { en: "peacemaker", ar: "صانع السلام/ مصلح" },
+            { en: "relative clauses", ar: "جمل الوصل" },
+            { en: "blow / burst", ar: "ينفجر/ انفجار" },
+            { en: "participle clauses", ar: "جمل المفعول المطلق" },
+            { en: "values", ar: "قيم" },
+            { en: "programme", ar: "برنامج" },
+            { en: "tears", ar: "دموع" },
+            { en: "personality", ar: "هوية شخصية" },
+            { en: "fuss", ar: "ضجة" },
+            { en: "Generalising", ar: "التعميم" },
+            { en: "mess about", ar: "يعبث" },
+            { en: "summary", ar: "ملخص" },
+            { en: "show off", ar: "يتباهى" },
+            { en: "celebrities", ar: "المشاهير" },
+            { en: "tell off", ar: "يوبخ" },
+            { en: "characteristics", ar: "صفات" },
+            { en: "wind up", ar: "يزعج" },
+            { en: "only child", ar: "الطفل الوحيد في الأسرة" },
+            { en: "much worse", ar: "أكثر سوءًا" },
+            { en: "towards", ar: "تجاه/ نحو" },
+            { en: "impress", ar: "إبهار/ إقناع" },
+            { en: "empathise", ar: "تعاطف/ يتعاطف" },
+            { en: "quite naughty", ar: "شقيّ جدًا" },
+            { en: "fall out", ar: "يتخاصم/ يختلف" },
+            { en: "dressed up", ar: "لبس" },
+            { en: "compliment", ar: "مجاملة/ مدح" },
+            { en: "pretending", ar: "تظاهر" },
+            { en: "variety", ar: "تنوع" },
+            { en: "hilarious", ar: "طريف" },
+            { en: "make up", ar: "يتصالح مع / يشكل" },
+            { en: "get the joke", ar: "يفهم النكتة" },
+            { en: "put up", ar: "يتحمل" },
+            { en: "seriously", ar: "جديًّا" },
+            { en: "get on", ar: "يتعامل مع" },
+            { en: "jealous", ar: "غيور" }
+          ],
+          "المرحلة العشرون": [
+            { en: "not fair", ar: "غير عادل" },
+            { en: "stressful", ar: "مرهق" },
+            { en: "clown", ar: "مهرج" },
+            { en: "upsetting", ar: "مزعج" },
+            { en: "role", ar: "وظيفة/ منصب" },
+            { en: "joyful", ar: "مرح/مبهج" },
+            { en: "loud", ar: "صاخب" },
+            { en: "opposite", ar: "نقيض/ضد" },
+            { en: "whereas", ar: "بينما" },
+            { en: "Distinguishing", ar: "التمييز" },
+            { en: "tend to", ar: "يميل إلى أن" },
+            { en: "viewpoint", ar: "وجهة نظر" },
+            { en: "shouting", ar: "صراخ" },
+            { en: "based on evidence", ar: "يستند إلى دليل" },
+            { en: "spend", ar: "أمضى" },
+            { en: "signalled", ar: "المشار إليه" },
+            { en: "bored", ar: "يشعر بالملل" },
+            { en: "objective", ar: "موضوعي/ حيادي" },
+            { en: "on my own", ar: "بنفسي" },
+            { en: "indicates", ar: "يشير إلى" },
+            { en: "a lie-in", ar: "إكمال النوم" },
+            { en: "academically gifted", ar: "موهوب أكاديميًا" },
+            { en: "clash", ar: "تنافر/ صدام" },
+            { en: "Colic", ar: "مغص" },
+            { en: "sibling", ar: "شقيق/ شقيقة" },
+            { en: "Lying flat", ar: "الاستلقاء" },
+            { en: "newborn baby", ar: "مولود جديد" },
+            { en: "Struggling", ar: "يكافح/ يعاني" },
+            { en: "row", ar: "شجار/ خلاف" },
+            { en: "bullies", ar: "المتنمرين" },
+            { en: "flunking", ar: "رسوب" },
+            { en: "teasing", ar: "سخرية/ مضايقة" },
+            { en: "relocating", ar: "انتقال" },
+            { en: "pupil", ar: "طالب/ تلميذ" },
+            { en: "extracts", ar: "مقتطفات" },
+            { en: "sticking", ar: "التمسك" }
+          ],
+          "المرحلة الحادية والعشرون": [
+            { en: "favour", ar: "معروف/ خدمة" },
+            { en: "modest", ar: "متواضع/ معتدل" },
+            { en: "turn out", ar: "اتضح" },
+            { en: "passionate", ar: "عاطفي/ شغوف" },
+            { en: "long run", ar: "على المدى الطويل" },
+            { en: "pushy", ar: "متسلط/ انتهازي" },
+            { en: "Personal qualities", ar: "الصفات الشخصية" },
+            { en: "sincere", ar: "صادق" },
+            { en: "admire", ar: "يعجب بـ" },
+            { en: "tough", ar: "قاسٍ/ صارم" },
+            { en: "adjectives", ar: "صفات" },
+            { en: "trustworthy", ar: "جدير بالثقة/ أمين" },
+            { en: "bigoted", ar: "متعصب" },
+            { en: "determined", ar: "عازم" },
+            { en: "capable", ar: "قادر" },
+            { en: "look after", ar: "يعتني" },
+            { en: "charming", ar: "جذاب/ فاتن" },
+            { en: "reliable", ar: "موثوق" },
+            { en: "compassionate", ar: "رحيم" },
+            { en: "responsible", ar: "مسؤول" },
+            { en: "conceited", ar: "متعجرف/ مغرور" },
+            { en: "proud", ar: "فخور" },
+            { en: "decent", ar: "محترم" },
+            { en: "nurse", ar: "ممرضة" },
+            { en: "dedicated", ar: "متفانٍ" },
+            { en: "proved", ar: "أثبت" },
+            { en: "defensive", ar: "دفاعي" },
+            { en: "shining", ar: "متألق" },
+            { en: "hypocritical", ar: "منافق" },
+            { en: "despise", ar: "يحتقر" },
+            { en: "idealistic", ar: "مثالي" },
+            { en: "footsteps", ar: "خطوات" },
+            { en: "immature", ar: "صبياني/ غير ناضج" },
+            { en: "idolise", ar: "يحب حبًا أعمى(يقدس)" },
+            { en: "inspirational", ar: "ملهم" },
+            { en: "loathe", ar: "يبغض" }
+          ],
+          "المرحلة الثانية والعشرون": [
+            { en: "pedestal", ar: "ركيزة/ تمثال" },
+            { en: "thieves", ar: "لصوص" },
+            { en: "workhouse", ar: "دار العمل" },
+            { en: "housekeeper", ar: "مدبرة المنزل" },
+            { en: "poorest people", ar: "أفقر الناس" },
+            { en: "handkerchief", ar: "وشاح/ منديل" },
+            { en: "make ends meet", ar: "تغطية النفقات الضرورية" },
+            { en: "arrest", ar: "يعتقل" },
+            { en: "somehow", ar: "بطريقة ما" },
+            { en: "skinny / thin", ar: "هزيل/ نحيف" },
+            { en: "subsistence", ar: "عيش الكفاف" },
+            { en: "owed to", ar: "مدين/ مستحق" },
+            { en: "huddled together", ar: "احتشدوا معًا" },
+            { en: "adopted", ar: "متبنى" },
+            { en: "warm", ar: "دافىء" },
+            { en: "attitudes", ar: "تصرفات" },
+            { en: "gave birth to a baby", ar: "أنجبت طفلًا" },
+            { en: "plenty", ar: "العديد/ الكثير" },
+            { en: "orphans", ar: "الأيتام" },
+            { en: "strangers", ar: "الغرباء" },
+            { en: "sense of belonging", ar: "الشعور بالانتماء" },
+            { en: "comfortable", ar: "مريح/ مرتاح" },
+            { en: "malnourished", ar: "المصابين بسوء التغذية" },
+            { en: "particular", ar: "معيّن/ محدد" },
+            { en: "encouraged", ar: "شجع" },
+            { en: "outcomes", ar: "نتائج" },
+            { en: "beg", ar: "يتوسل" },
+            { en: "origin", ar: "أصل/ مصدر" },
+            { en: "managers", ar: "مدراء" },
+            { en: "cc an email", ar: "نسخة بريد إلكتروني" },
+            { en: "gathered together", ar: "اجتمعوا معًا" },
+            { en: "go online", ar: "الاتصال بالإنترنت" },
+            { en: "jewellery", ar: "مجوهرات" },
+            { en: "hang up the phone", ar: "ينهي المكالمة" },
+            { en: "pockets", ar: "جيوب" },
+            { en: "expressions", ar: "تعبيرات" }
+          ],
+          "المرحلة الثالثة والعشرون": [
+            { en: "can be omitted", ar: "يمكن حذفه" },
+            { en: "tendency", ar: "رغبة/ ميل" },
+            { en: "defining", ar: "معرف" },
+            { en: "sweeping", ar: "واسع" },
+            { en: "hall", ar: "قاعة" },
+            { en: "onwards", ar: "فصاعدا" },
+            { en: "fed up with", ar: "يسئم من" },
+            { en: "offence", ar: "إهانة/ جريمة" },
+            { en: "whispering", ar: "الهمس" },
+            { en: "entrepreneurial spirit", ar: "روح المبادرة" },
+            { en: "instead of", ar: "بدلًا من" },
+            { en: "bargain", ar: "صفقة" },
+            { en: "pronoun", ar: "ضمير" },
+            { en: "overcome", ar: "تغلب على" },
+            { en: "refer to", ar: "يعود على" },
+            { en: "possessions", ar: "ممتلكات" },
+            { en: "dial", ar: "مقبض" },
+            { en: "members", ar: "أفراد" },
+            { en: "absent-minded", ar: "شارد الذهن" },
+            { en: "the advent of", ar: "ظهور" },
+            { en: "similar", ar: "مشابه" },
+            { en: "altered", ar: "تغير" },
+            { en: "attache", ar: "يوصل" },
+            { en: "interact", ar: "يتفاعل" },
+            { en: "passive", ar: "مبني للمجهول" },
+            { en: "remain", ar: "يبقى" },
+            { en: "Baby boomers", ar: "جيل الطفرة الاقتصادية" },
+            { en: "Increasingly", ar: "بإزدياد" },
+            { en: "full pension", ar: "معاش تقاعدي كامل" },
+            { en: "seeking", ar: "السعي" },
+            { en: "Millennial", ar: "جيل الألفية" },
+            { en: "ensure", ar: "يكفل" },
+            { en: "generations", ar: "الأجيال" },
+            { en: "attend", ar: "يحضر" },
+            { en: "Broadly speaking", ar: "بشكل عام" },
+            { en: "concerts", ar: "حفلات موسيقية" }
+          ],
+          "المرحلة الرابعة والعشرون": [
+            { en: "household", ar: "أسرة" },
+            { en: "regard", ar: "مجال/ فيما يتعلق بـ" },
+            { en: "labour-saving devices", ar: "الأجهزة الموفرة للجهد" },
+            { en: "setting out", ar: "يوضح" },
+            { en: "striking", ar: "لافت للنظر" },
+            { en: "restate", ar: "إعادة صياغة / تأكيد" },
+            { en: "humble", ar: "متواضع/ بسيط" },
+            { en: "register", ar: "تسجيل" },
+            { en: "statistician", ar: "خبير الإحصاء" },
+            { en: "personal conviction", ar: "قناعة شخصية" },
+            { en: "industrial revolution", ar: "الثورة الصناعية" },
+            { en: "Therefore", ar: "لذلك" },
+            { en: "liberated", ar: "متحرر" },
+            { en: "further", ar: "إضافي/ يعزز" },
+            { en: "prior to", ar: "قبل" },
+            { en: "coherent", ar: "متسق" },
+            { en: "doing laundry", ar: "غسل الملابس" },
+            { en: "a key reason", ar: "العامل الأساسي" },
+            { en: "distraction", ar: "إلهاء" },
+            { en: "influential", ar: "فعال/ مؤثر" },
+            { en: "apart", ar: "بعيدًا" },
+            { en: "perform heroic acts", ar: "أداء أعمال بطولية" },
+            { en: "overall", ar: "بشكل عام" },
+            { en: "status", ar: "مكانة" },
+            { en: "aided by", ar: "مساعدة من" },
+            { en: "unacceptable", ar: "غير مقبول" },
+            { en: "flexibility", ar: "مرونة" },
+            { en: "count on", ar: "الاعتماد على" },
+            { en: "thesis", ar: "موضوع" },
+            { en: "borrow", ar: "يستعير" },
+            { en: "organisation", ar: "تنظيم" },
+            { en: "irritating", ar: "مزعج" },
+            { en: "Content", ar: "محتوى" },
+            { en: "blog", ar: "مدونة شخصية" },
+            { en: "Introduction", ar: "مقدمة/ تقديم" },
+            { en: "appointment", ar: "موعد/ تكليف" }
+          ],
+          "المرحلة الخامسة والعشرون": [
+            { en: "obvious", ar: "واضح" },
+            { en: "differ", ar: "يختلف" },
+            { en: "stuff", ar: "أشياء" },
+            { en: "in order to", ar: "بغرض أن...." },
+            { en: "meaningful", ar: "هادف" },
+            { en: "determiners", ar: "محددات" },
+            { en: "honesty", ar: "المصداقية" },
+            { en: "conjunctions", ar: "أدوات الربط" },
+            { en: "constantly", ar: "باستمرار" },
+            { en: "emphasised", ar: "مؤكد/ أكد" },
+            { en: "contact lenses", ar: "العدسات اللاصقة" },
+            { en: "documents", ar: "وثائق" },
+            { en: "typical", ar: "اعتيادي" },
+            { en: "patients", ar: "المرضى" },
+            { en: "twins", ar: "التوائم" },
+            { en: "volunteering", ar: "تطوع" },
+            { en: "ridiculous", ar: "مثير للسخرية" },
+            { en: "shelter", ar: "مسكن/ ملجأ" },
+            { en: "contraction", ar: "اختصار/ انكماش" },
+            { en: "proper", ar: "ملائم/ سليم" },
+            { en: "used to", ar: "اعتاد على" },
+            { en: "politician", ar: "سياسي" },
+            { en: "lift", ar: "توصيلة/ مصعد" },
+            { en: "tackle", ar: "مكافحة/ معالجة" },
+            { en: "concentration span", ar: "فترة التركيز" },
+            { en: "grandchildren", ar: "حفيد" },
+            { en: "trouble", ar: "متاعب" },
+            { en: "intolerant", ar: "غير متسامح" },
+            { en: "daydream", ar: "أحلام اليقظة" },
+            { en: "pianist", ar: "عازف البيانو" },
+            { en: "stare", ar: "يحدق" },
+            { en: "Athletes", ar: "رياضيين" },
+            { en: "semi-autobiographical", ar: "شبه سيرة ذاتية" },
+            { en: "talents", ar: "مواهب" },
+            { en: "be presented as", ar: "يتم تقديمه على أنه....." },
+            { en: "prison", ar: "سجن" }
+          ],
+          "المرحلة السادسة والعشرون": [
+            { en: "Fortunately", ar: "لحسن الحظ" },
+            { en: "corner", ar: "زاوية" },
+            { en: "aware", ar: "واعٍ" },
+            { en: "paid a fortune", ar: "دفع ثروة" },
+            { en: "law", ar: "قانون" },
+            { en: "retro-tech", ar: "التكنولوجيا القديمة" },
+            { en: "journalist", ar: "صحفي" },
+            { en: "rapidly", ar: "سريعًا" },
+            { en: "magazines", ar: "مجلات" },
+            { en: "analogue televisions", ar: "التلفزيونات التناظرية(القديمة)" },
+            { en: "terrible", ar: "مريع/ فظيع" },
+            { en: "platform", ar: "منصة" },
+            { en: "capital", ar: "عاصمة" },
+            { en: "calm", ar: "هادىء" },
+            { en: "Ragged Schools", ar: "مدارس مخصصة للفقراء" },
+            { en: "a great extent", ar: "إلى حد كبير" },
+            { en: "decorate", ar: "يزيّن" },
+            { en: "suspicious", ar: "متشكك" },
+            { en: "ignored", ar: "يتم تجاهله" },
+            { en: "acknowledging that", ar: "الاعتراف بأن" },
+            { en: "headset", ar: "سماعة الرأس" },
+            { en: "handle", ar: "استيعاب/ التعامل مع" },
+            { en: "Ergonomic keyboards", ar: "لوحات مفاتيح مريحة" },
+            { en: "previous", ar: "سابق" },
+            { en: "teenager", ar: "مراهق" },
+            { en: "pleasures", ar: "مسرات" },
+            { en: "headquarters", ar: "مقر رئيسي" },
+            { en: "back then", ar: "في ذلك الوقت" },
+            { en: "competitive", ar: "تنافسي" },
+            { en: "set out", ar: "يشرح" },
+            { en: "budget", ar: "ميزانية" },
+            { en: "held that", ar: "يُرى أنه" },
+            { en: "Virtually", ar: "عمليًا" },
+            { en: "wisdom", ar: "الحكمة" },
+            { en: "dual lens camera", ar: "كاميرا مزدوجة العدسة" },
+            { en: "for instance", ar: "على سبيل المثال" }
+          ],
+          "المرحلة السابعة والعشرون": [
+            { en: "Protein", ar: "بروتين" },
+            { en: "Carbohydrate", ar: "كربوهيدرات" },
+            { en: "Fat", ar: "دهون" },
+            { en: "Vitamin", ar: "فيتامين" },
+            { en: "Mineral", ar: "معادن" }
+          ],
+          "المرحلة الثامنة والعشرون": [
+            { en: "School", ar: "مدرسة" },
+            { en: "University", ar: "جامعة" },
+            { en: "College", ar: "كلية" },
+            { en: "Institute", ar: "معهد" },
+            { en: "Academy", ar: "أكاديمية" }
+          ],
+          "المرحلة التاسعة والعشرون": [
+            { en: "Novel", ar: "رواية" },
+            { en: "Dictionary", ar: "قاموس" },
+            { en: "Encyclopedia", ar: "موسوعة" },
+            { en: "Magazine", ar: "مجلة" },
+            { en: "Journal", ar: "مجلة علمية" }
+          ],
+          "المرحلة الثلاثون": [
+            { en: "Mountain", ar: "جبل" },
+            { en: "River", ar: "نهر" },
+            { en: "Forest", ar: "غابة" },
+            { en: "Valley", ar: "وادي" },
+            { en: "Desert", ar: "صحراء" }
+          ],
+          "المشاريع": [
+            { en: "Plan", ar: "خطة" },
+            { en: "Project", ar: "مشروع" },
+            { en: "Idea", ar: "فكرة" },
+            { en: "Goal", ar: "هدف" },
+            { en: "Vision", ar: "رؤية" }
+          ],
+          "المصطلحات": [
+            { en: "Technology", ar: "تكنولوجيا" },
+            { en: "Science", ar: "علوم" },
+            { en: "Culture", ar: "ثقافة" },
+            { en: "History", ar: "تاريخ" },
+            { en: "Philosophy", ar: "فلسفة" }
+          ],
+          "المشروبات الساخنة": [
+            { en: "Coffee", ar: "قهوة" },
+            { en: "Tea", ar: "شاي" },
+            { en: "Hot Chocolate", ar: "شوكولاتة ساخنة" },
+            { en: "Herbal Tea", ar: "شاي أعشاب" },
+            { en: "Latte", ar: "لاتيه" }
+          ],
+          "المشروبات الغازية": [
+            { en: "Cola", ar: "كولا" },
+            { en: "Sprite", ar: "سبرايت" },
+            { en: "Fanta", ar: "فانتا" },
+            { en: "Pepsi", ar: "بيبسي" },
+            { en: "7Up", ar: "7Up" }
+          ],
+          "الأدوات الرياضية": [
+            { en: "Ball", ar: "كرة" },
+            { en: "Bat", ar: "مضرب" },
+            { en: "Glove", ar: "قفاز" },
+            { en: "Helmet", ar: "خوذة" },
+            { en: "Racket", ar: "مضرب تنس" }
+          ],
+          "الموسيقى": [
+            { en: "Song", ar: "أغنية" },
+            { en: "Melody", ar: "لحن" },
+            { en: "Rhythm", ar: "إيقاع" },
+            { en: "Beat", ar: "نبضة" },
+            { en: "Harmony", ar: "تناغم" }
+          ],
+          "الألعاب": [
+            { en: "Football", ar: "كرة القدم" },
+            { en: "Chess", ar: "شطرنج" },
+            { en: "Video Game", ar: "لعبة فيديو" },
+            { en: "Tennis", ar: "التنس" },
+            { en: "Basketball", ar: "كرة السلة" }
+          ],
+          "الوظائف": [
+            { en: "Manager", ar: "مدير" },
+            { en: "Assistant", ar: "مساعد" },
+            { en: "Secretary", ar: "سكرتير" },
+            { en: "Clerk", ar: "موظف" },
+            { en: "Operator", ar: "مشغل" }
+          ],
+          "الأنشطة": [
+            { en: "Dancing", ar: "رقص" },
+            { en: "Singing", ar: "غناء" },
+            { en: "Drawing", ar: "رسم" },
+            { en: "Cooking", ar: "طبخ" },
+            { en: "Writing", ar: "كتابة" }
+          ],
+          "المواقف": [
+            { en: "Situation", ar: "موقف" },
+            { en: "Event", ar: "حدث" },
+            { en: "Moment", ar: "لحظة" },
+            { en: "Occasion", ar: "مناسبة" },
+            { en: "Scenario", ar: "سيناريو" }
+          ],
+          "الأماكن": [
+            { en: "Park", ar: "حديقة" },
+            { en: "Museum", ar: "متحف" },
+            { en: "Library", ar: "مكتبة" },
+            { en: "Restaurant", ar: "مطعم" },
+            { en: "Mall", ar: "مول" }
+          ],
+          "المفردات اليومية": [
+            { en: "Key", ar: "مفتاح" },
+            { en: "Door", ar: "باب" },
+            { en: "Window", ar: "نافذة" },
+            { en: "Phone", ar: "هاتف" },
+            { en: "Computer", ar: "حاسوب" }
+          ],
+          "المصطلحات التقنية": [
+            { en: "Computer", ar: "حاسوب" },
+            { en: "Internet", ar: "إنترنت" },
+            { en: "Software", ar: "برنامج" },
+            { en: "Hardware", ar: "أجهزة" },
+            { en: "Database", ar: "قاعدة بيانات" }
+          ]
+        },
+        english: {
+          "المرحلة الأولى": [
+            { sentence: "terrified", meaning: "very frightened" },
+            { sentence: "astonished", meaning: "very surprised" },
+            { sentence: "exasperated", meaning: "very annoyed about something" },
+            { sentence: "livid", meaning: "very angry about something" },
+            { sentence: "tense", meaning: "unable to relax because you feel nervous" },
+            { sentence: "ecstatic", meaning: "very happy about something" },
+            { sentence: "bewildered", meaning: "very confused" },
+            { sentence: "devastated", meaning: "very unhappy about something" }
+          ],
+          "المرحلة الثانية": [
+            { sentence: "pick up", meaning: "to receive sounds, phone signals, etc." },
+            { sentence: "bring about", meaning: "to cause something to happen" },
+            { sentence: "point out", meaning: "to tell someone something you think they don’t know" },
+            { sentence: "make out", meaning: "to see something with difficulty" },
+            { sentence: "wipe out", meaning: "to destroy something completely" },
+            { sentence: "get across", meaning: "to successfully communicate a message/ an idea" },
+            { sentence: "spell out", meaning: "to explain something very clearly" },
+            { sentence: "come across", meaning: "to meet or find something or someone" },
+            { sentence: "figure out", meaning: "to solve or understand something" },
+            { sentence: "take in", meaning: "to understand and remember something you are told" },
+            { sentence: "groom", meaning: "to brush and clean fur" },
+            { sentence: "omnivore", meaning: "a living being that eats plants and animals" },
+            { sentence: "rival", meaning: "a person or group that competes with others" }
+          ],
+          "المرحلة الثالثة": [
+            { sentence: "idioms", meaning: "a fixed phrase that has a special meaning which is different from the usual meaning of the individual words" },
+            { sentence: "jump down somebody’s throat", meaning: "to react angrily to something" },
+            { sentence: "put somebody on the spot", meaning: "to embarrass someone by forcing them to answer a difficult question" },
+            { sentence: "fire questions at someone", meaning: "to ask someone a lot of questions quickly" },
+            { sentence: "refuse to let something drop", meaning: "to not stop talking about something" },
+            { sentence: "insist on having the last word", meaning: "to have to make the final point" },
+            { sentence: "not get a word in edgeways", meaning: "to be unable to say anything because someone else is talking all the time" }
+          ],
+          "المرحلة الرابعة": [
+            { sentence: "endangered species", meaning: "types of animals in danger of extinction" },
+            { sentence: "water scarcity", meaning: "lack of water" },
+            { sentence: "renewable energy", meaning: "power produced by wind, sun, etc." },
+            { sentence: "wind turbine", meaning: "a machine used to produce electric power" },
+            { sentence: "toxic waste", meaning: "chemicals and other harmful waste products" },
+            { sentence: "exhaust fumes", meaning: "poisonous gases produced by engines of non-electric vehicles" },
+            { sentence: "ozone layer", meaning: "part of the stratosphere which limits the amount of ultraviolet radiation reaching the Earth" },
+            { sentence: "greenhouse effect", meaning: "process by which gases trapped in the atmosphere cause the planet to heat up" },
+            { sentence: "poacher", meaning: "someone who illegally catches animals" },
+            { sentence: "dystopia", meaning: "an imaginary place where life is extremely difficult" },
+            { sentence: "Signposting", meaning: " phrases that help you follow what a speaker is saying. They can also indicate how something relates to what has already been said." },
+            { sentence: "Compound nouns", meaning: "A noun made up of two words. Usually the first part of the compound tells us the type or purpose of the second noun, e.g. climate change (climate tells us what type of change we are talking about)." }
+          ],
+          "المرحلة الخامسة": [
+            { sentence: "bigoted", meaning: "intolerant of other people’s beliefs and practices" },
+            { sentence: "conceited", meaning: "constantly telling people how great you are" },
+            { sentence: "hypocritical", meaning: "saying one thing, but doing something different" },
+            { sentence: "modest", meaning: "not talking in a proud way about your achievements" },
+            { sentence: "passionate", meaning: "feeling very strongly about something" },
+            { sentence: "pushy", meaning: "determined to get what you want" },
+            { sentence: "tough", meaning: "able to deal with difficult situations" },
+            { sentence: "trustworthy", meaning: "can always be trusted" },
+            { sentence: "housekeeper", meaning: "a person whose job is to look after a house" },
+            { sentence: "orphan", meaning: "a child whose parents have died" }
+          ],
+          "المرحلة السادسة": [
+            { sentence: "be the peacemaker", meaning: "to help other people resolve an argument" },
+            { sentence: "blow things out of proportion", meaning: "to react as if what has happened is much worse than it is" },
+            { sentence: "burst into tears", meaning: "to suddenly start crying" },
+            { sentence: "have a go at somebody", meaning: "to criticise someone" },
+            { sentence: "make a fuss of somebody", meaning: "to give someone a lot of attention" },
+            { sentence: "mess about", meaning: "to behave in a silly way" },
+            { sentence: "show off", meaning: "to try and impress somebody" },
+            { sentence: "tell somebody off", meaning: "to speak to somebody angrily about something wrong that they have done" },
+            { sentence: "wind somebody up", meaning: "to say things in order to annoy somebody" }
+          ],
+          "المرحلة السابعة": [
+            { sentence: "make ends meet", meaning: "to have just enough money to buy what you need" },
+            { sentence: "a subsistence", meaning: "to have just enough money to buy what you need" },
+            { sentence: "hand-to-mouth", meaning: "to have just enough money to buy what you need" },
+            { sentence: "living day-to-day", meaning: "dealing with things without thinking about the future" },
+            { sentence: "went hungry", meaning: "didn’t have enough food" },
+            { sentence: "huddled together", meaning: "sat or stood very close to other people" },
+            { sentence: "gathered together", meaning: "sat or stood very close to other people" },
+            { sentence: "beg", meaning: "ask for money or food from strangers" },
+            { sentence: "skinny", meaning: "very thin" },
+            { sentence: "malnourished", meaning: "very thin" },
+            { sentence: "feel at home", meaning: "be comfortable in a particular place" },
+            { sentence: "sense of belonging", meaning: "be comfortable in a particular place" }
+          ],
+          "المرحلة الثامنة": [
+            { sentence: "hard-hitting", meaning: "includes strong criticism" },
+            { sentence: "quirky", meaning: "unusual in an interesting way" },
+            { sentence: "heartbreaking", meaning: "very sad" },
+            { sentence: "newsworthy", meaning: "interesting enough to be reported" },
+            { sentence: "balanced", meaning: "considering all sides equally" },
+            { sentence: "topical", meaning: "related to things that are happening" },
+            { sentence: "off the record", meaning: "not meant to be publicly reported" },
+            { sentence: "sensational", meaning: "shocking and exciting, not serious" },
+            { sentence: "exclusive", meaning: "(a news story) published only in one place" },
+            { sentence: "heartwarming", meaning: "causing feelings of happiness" }
+          ],
+          "المرحلة التاسعة": [
+            { sentence: "subject matter", meaning: "what people are talking or writing about in art, pictures, etc." },
+            { sentence: "poignant", meaning: "causing a feeling of sadness" },
+            { sentence: "capture", meaning: "succeed in showing something using pictures" },
+            { sentence: "landscape", meaning: "a view of the land or countryside" },
+            { sentence: "crop", meaning: "remove parts of a picture, leaving the most important parts" },
+            { sentence: "pose", meaning: "stay in a particular position for a photo or painting" },
+            { sentence: "evoke", meaning: "make someone remember or feel an emotion" }
+          ],
+          "المرحلة العاشرة": [
+            { sentence: "peer", meaning: "to look at something closely and carefully" },
+            { sentence: "glance", meaning: "to take a quick look at something" },
+            { sentence: "spot", meaning: "to notice something or someone" },
+            { sentence: "bellow", meaning: "to shout angrily in a low deep voice" },
+            { sentence: "yell", meaning: "to shout loudly, because you are excited or angry" },
+            { sentence: "mutter", meaning: "to speak so quietly that you cannot be heard easily" },
+            { sentence: "race", meaning: "to go somewhere as quickly as possible" },
+            { sentence: "wander", meaning: "to walk in a casual way, often in no particular direction" }
+          ],
+          "المرحلة الحادية عشر": [
+            { sentence: "clash", meaning: "a fight or strong disagreement" },
+            { sentence: "relocate", meaning: "move to a new place to live or for work" },
+            { sentence: "row", meaning: "a noisy argument or fight" },
+            { sentence: "sibling", meaning: "a brother or sister" },
+            { sentence: "flunk", meaning: "fail to do something" }
+          ],
+          "المرحلة الثانية عشر": [
+            { sentence: "It’s been keeping me up at night.", meaning: "Expressing anxiety" },
+            { sentence: "I’m worried sick about ...", meaning: "Expressing anxiety" },
+            { sentence: "I can breathe a sigh of relief now", meaning: "Expressing relief" },
+            { sentence: "That’s a weight off my mind", meaning: "Expressing relief" },
+            { sentence: "… is driving me up the wall!", meaning: "Expressing annoyance and frustration" },
+            { sentence: "… really gets on my nerves.", meaning: "Expressing annoyance and frustration" },
+            { sentence: "I’ve had it up to here with ...", meaning: "Expressing annoyance and frustration" },
+            { sentence: "You’ve got to be kidding me!", meaning: "Expressing surprise or disbelief" },
+            { sentence: "Get out of here!", meaning: "Expressing surprise or disbelief" },
+            { sentence: "Who would have thought it?", meaning: "Expressing surprise or disbelief" },
+            { sentence: "I’m feeling a bit down in the dumps.", meaning: "Expressing sadness" },
+            { sentence: "I’m feeling a bit blue.", meaning: "Expressing sadness" },
+            { sentence: "I’m heartbroken.", meaning: "Expressing sadness" },
+            { sentence: "I’m walking on air!", meaning: "Expressing enjoyment or happiness" },
+            { sentence: "I can’t stop smiling!", meaning: "Expressing enjoyment or happiness" }
+          ],
+
+          "المرحلة الثالثة عشر": [
+            { sentence: "I’m torn between … and …", meaning: "Expressing indecision" },
+            { sentence: "I’m on the fence (about) …", meaning: "Expressing indecision" },
+            { sentence: "I’m having second thoughts.", meaning: "Expressing indecision" },
+            { sentence: "I can’t make up my mind", meaning: "Expressing indecision" },
+            { sentence: "On the one hand, … but on the other hand, …", meaning: "Expressing indecision" },
+            { sentence: "I can’t put my finger on it, but …", meaning: "Expressing indecision" },
+            { sentence: "You’re spot on", meaning: "Expressing agreement" },
+            { sentence: "That’s what I was going to say! /Absolutely!", meaning: "Expressing agreement" },
+            { sentence: "It doesn’t grab me", meaning: "Expressing disagreement" },
+            { sentence: "I think we’re on the wrong track", meaning: "Expressing disagreement" },
+            { sentence: "That’s a good point, but …", meaning: "Expressing disagreement" },
+            { sentence: "Ok, but another option might be …", meaning: "Expressing disagreement" },
+            { sentence: "Seriously?!", meaning: "Expressing disagreement" },
+            { sentence: "So, let’s make a decision on this", meaning: "Reaching a decision" },
+            { sentence: "Okay, so shall we go with…?", meaning: "Reaching a decision" },
+            { sentence: "It looks as if we agree that …", meaning: "Reaching a decision" }
+          ],
+
+          "المرحلة الرابعة عشر": [
+
+            { sentence: "On the whole, …", meaning: "Talking about what is generally true" },
+            { sentence: "In general, …", meaning: "Talking about what is generally true" },
+            { sentence: "In some/many/most cases, …", meaning: "Talking about what is generally true" },
+            { sentence: "By and large, …", meaning: "Talking about what is generally true" },
+            { sentence: "Broadly speaking, …", meaning: "Talking about what is generally true" },
+            { sentence: "More often than not, …", meaning: "Talking about what is generally true" },
+            { sentence: "Nine times out out of ten, …", meaning: "Talking about what is generally true" },
+            { sentence: "90 percent of the time, …", meaning: "Talking about what is generally true" },
+            { sentence: "To some/a great extent, …", meaning: "Talking about what is generally true" },
+            { sentence: "… tend to think/say/believe …", meaning: "Talking about what is generally true" },
+            { sentence: "There’s a tendency for … to …", meaning: "Talking about what is generally true" },
+            { sentence: "This is a bit of a sweeping statement, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "I may be overgeneralising, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "You might think this is an overgeneralisation, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "I’m heartbroken.", meaning: "Expressing sadness" },
+            { sentence: "It looks as if we agree that …", meaning: "Reaching a decision" }
+
+          ],
+
+          "المرحلة الخامسة عشر": [
+
+            { sentence: "You’ll never believe what happened to me . . .", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "That reminds me of (a time when) … .", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "Have I ever told you about …?", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "A friend of a friend told me this story.", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "I was travelling the bus, when ...", meaning: "Giving background information" },
+            { sentence: "Well, I’m not sure if you know …, but …", meaning: "Giving background information" },
+            { sentence: "There was this guy who …", meaning: "Giving background information" },
+            { sentence: "Anyway, to cut a long story short, …", meaning: "Introducing a turning point" },
+            { sentence: "Suddenly, …", meaning: "Introducing a turning point" },
+            { sentence: "No sooner had … than …", meaning: "Introducing a turning point" },
+            { sentence: "Hardly had we … when …", meaning: "Introducing a turning point" },
+            { sentence: "It turned out that …", meaning: "Introducing a turning point" },
+            { sentence: "Before we knew what was happening …", meaning: "Introducing a turning point" },
+            { sentence: "Guess what?", meaning: "Introducing a turning point" },
+            { sentence: "Obviously, I was a bit taken aback.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "I couldn’t believe what was happening.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "Obviously/Presumably/Unbelievably, etc.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "And then, to top it all, …", meaning: "Showing the speaker’s attitude" },
+            { sentence: "I mean – I’ve done it, haven’t you?", meaning: "Showing the speaker’s attitude" },
+            { sentence: "No word of a lie!", meaning: "Showing the speaker’s attitude" },
+            { sentence: "Would you believe it?", meaning: "Showing the speaker’s attitude" },
+            { sentence: "It was probably the most embarrassing moment of my life!", meaning: "Rounding off the anecdote" },
+            { sentence: "I’ll never forget …", meaning: "Rounding off the anecdote" },
+            { sentence: "I’ll never … again.", meaning: "Rounding off the anecdote" }
+          ],
+
+          "الفصل الأول كاملًا": [
+            { sentence: "terrified", meaning: "very frightened" },
+            { sentence: "astonished", meaning: "very surprised" },
+            { sentence: "exasperated", meaning: "very annoyed about something" },
+            { sentence: "livid", meaning: "very angry about something" },
+            { sentence: "tense", meaning: "unable to relax because you feel nervous" },
+            { sentence: "ecstatic", meaning: "very happy about something" },
+            { sentence: "bewildered", meaning: "very confused" },
+            { sentence: "devastated", meaning: "very unhappy about something" },
+            { sentence: "pick up", meaning: "to receive sounds, phone signals, etc." },
+            { sentence: "bring about", meaning: "to cause something to happen" },
+            { sentence: "point out", meaning: "to tell someone something you think they don’t know" },
+            { sentence: "make out", meaning: "to see something with difficulty" },
+            { sentence: "wipe out", meaning: "to destroy something completely" },
+            { sentence: "get across", meaning: "to successfully communicate a message/ an idea" },
+            { sentence: "spell out", meaning: "to explain something very clearly" },
+            { sentence: "come across", meaning: "to meet or find something or someone" },
+            { sentence: "figure out", meaning: "to solve or understand something" },
+            { sentence: "take in", meaning: "to understand and remember something you are told" },
+            { sentence: "groom", meaning: "to brush and clean fur" },
+            { sentence: "omnivore", meaning: "a living being that eats plants and animals" },
+            { sentence: "rival", meaning: "a person or group that competes with others" },
+            { sentence: "idioms", meaning: "a fixed phrase that has a special meaning which is different from the usual meaning of the individual words" },
+            { sentence: "jump down somebody’s throat", meaning: "to react angrily to something" },
+            { sentence: "put somebody on the spot", meaning: "to embarrass someone by forcing them to answer a difficult question" },
+            { sentence: "fire questions at someone", meaning: "to ask someone a lot of questions quickly" },
+            { sentence: "refuse to let something drop", meaning: "to not stop talking about something" },
+            { sentence: "insist on having the last word", meaning: "to have to make the final point" },
+            { sentence: "not get a word in edgeways", meaning: "to be unable to say anything because someone else is talking all the time" },
+            { sentence: "endangered species", meaning: "types of animals in danger of extinction" },
+            { sentence: "water scarcity", meaning: "lack of water" },
+            { sentence: "renewable energy", meaning: "power produced by wind, sun, etc." },
+            { sentence: "wind turbine", meaning: "a machine used to produce electric power" },
+            { sentence: "toxic waste", meaning: "chemicals and other harmful waste products" },
+            { sentence: "exhaust fumes", meaning: "poisonous gases produced by engines of non-electric vehicles" },
+            { sentence: "ozone layer", meaning: "part of the stratosphere which limits the amount of ultraviolet radiation reaching the Earth" },
+            { sentence: "greenhouse effect", meaning: "process by which gases trapped in the atmosphere cause the planet to heat up" },
+            { sentence: "poacher", meaning: "someone who illegally catches animals" },
+            { sentence: "dystopia", meaning: "an imaginary place where life is extremely difficult" },
+            { sentence: "Signposting", meaning: " phrases that help you follow what a speaker is saying. They can also indicate how something relates to what has already been said." },
+            { sentence: "Compound nouns", meaning: "A noun made up of two words. Usually the first part of the compound tells us the type or purpose of the second noun, e.g. climate change (climate tells us what type of change we are talking about)." },
+            { sentence: "bigoted", meaning: "intolerant of other people’s beliefs and practices" },
+            { sentence: "conceited", meaning: "constantly telling people how great you are" },
+            { sentence: "hypocritical", meaning: "saying one thing, but doing something different" },
+            { sentence: "modest", meaning: "not talking in a proud way about your achievements" },
+            { sentence: "passionate", meaning: "feeling very strongly about something" },
+            { sentence: "pushy", meaning: "determined to get what you want" },
+            { sentence: "tough", meaning: "able to deal with difficult situations" },
+            { sentence: "trustworthy", meaning: "can always be trusted" },
+            { sentence: "housekeeper", meaning: "a person whose job is to look after a house" },
+            { sentence: "orphan", meaning: "a child whose parents have died" },
+            { sentence: "be the peacemaker", meaning: "to help other people resolve an argument" },
+            { sentence: "blow things out of proportion", meaning: "to react as if what has happened is much worse than it is" },
+            { sentence: "burst into tears", meaning: "to suddenly start crying" },
+            { sentence: "have a go at somebody", meaning: "to criticise someone" },
+            { sentence: "make a fuss of somebody", meaning: "to give someone a lot of attention" },
+            { sentence: "mess about", meaning: "to behave in a silly way" },
+            { sentence: "show off", meaning: "to try and impress somebody" },
+            { sentence: "tell somebody off", meaning: "to speak to somebody angrily about something wrong that they have done" },
+            { sentence: "wind somebody up", meaning: "to say things in order to annoy somebody" },
+            { sentence: "make ends meet", meaning: "to have just enough money to buy what you need" },
+            { sentence: "a subsistence", meaning: "to have just enough money to buy what you need" },
+            { sentence: "hand-to-mouth", meaning: "to have just enough money to buy what you need" },
+            { sentence: "living day-to-day", meaning: "dealing with things without thinking about the future" },
+            { sentence: "went hungry", meaning: "didn’t have enough food" },
+            { sentence: "huddled together", meaning: "sat or stood very close to other people" },
+            { sentence: "gathered together", meaning: "sat or stood very close to other people" },
+            { sentence: "beg", meaning: "ask for money or food from strangers" },
+            { sentence: "skinny", meaning: "very thin" },
+            { sentence: "malnourished", meaning: "very thin" },
+            { sentence: "feel at home", meaning: "be comfortable in a particular place" },
+            { sentence: "sense of belonging", meaning: "be comfortable in a particular place" },
+            { sentence: "hard-hitting", meaning: "includes strong criticism" },
+            { sentence: "quirky", meaning: "unusual in an interesting way" },
+            { sentence: "heartbreaking", meaning: "very sad" },
+            { sentence: "newsworthy", meaning: "interesting enough to be reported" },
+            { sentence: "balanced", meaning: "considering all sides equally" },
+            { sentence: "topical", meaning: "related to things that are happening" },
+            { sentence: "off the record", meaning: "not meant to be publicly reported" },
+            { sentence: "sensational", meaning: "shocking and exciting, not serious" },
+            { sentence: "exclusive", meaning: "(a news story) published only in one place" },
+            { sentence: "heartwarming", meaning: "causing feelings of happiness" },
+            { sentence: "subject matter", meaning: "what people are talking or writing about in art, pictures, etc." },
+            { sentence: "poignant", meaning: "causing a feeling of sadness" },
+            { sentence: "capture", meaning: "succeed in showing something using pictures" },
+            { sentence: "landscape", meaning: "a view of the land or countryside" },
+            { sentence: "crop", meaning: "remove parts of a picture, leaving the most important parts" },
+            { sentence: "pose", meaning: "stay in a particular position for a photo or painting" },
+            { sentence: "evoke", meaning: "make someone remember or feel an emotion" },
+            { sentence: "peer", meaning: "to look at something closely and carefully" },
+            { sentence: "glance", meaning: "to take a quick look at something" },
+            { sentence: "spot", meaning: "to notice something or someone" },
+            { sentence: "bellow", meaning: "to shout angrily in a low deep voice" },
+            { sentence: "yell", meaning: "to shout loudly, because you are excited or angry" },
+            { sentence: "mutter", meaning: "to speak so quietly that you cannot be heard easily" },
+            { sentence: "race", meaning: "to go somewhere as quickly as possible" },
+            { sentence: "wander", meaning: "to walk in a casual way, often in no particular direction" },
+            { sentence: "clash", meaning: "a fight or strong disagreement" },
+            { sentence: "relocate", meaning: "move to a new place to live or for work" },
+            { sentence: "row", meaning: "a noisy argument or fight" },
+            { sentence: "sibling", meaning: "a brother or sister" },
+            { sentence: "flunk", meaning: "fail to do something" },
+            { sentence: "It’s been keeping me up at night.", meaning: "Expressing anxiety" },
+            { sentence: "I’m worried sick about ...", meaning: "Expressing anxiety" },
+            { sentence: "I can breathe a sigh of relief now", meaning: "Expressing relief" },
+            { sentence: "That’s a weight off my mind", meaning: "Expressing relief" },
+            { sentence: "… is driving me up the wall!", meaning: "Expressing annoyance and frustration" },
+            { sentence: "… really gets on my nerves.", meaning: "Expressing annoyance and frustration" },
+            { sentence: "I’ve had it up to here with ...", meaning: "Expressing annoyance and frustration" },
+            { sentence: "You’ve got to be kidding me!", meaning: "Expressing surprise or disbelief" },
+            { sentence: "Get out of here!", meaning: "Expressing surprise or disbelief" },
+            { sentence: "Who would have thought it?", meaning: "Expressing surprise or disbelief" },
+            { sentence: "I’m feeling a bit down in the dumps.", meaning: "Expressing sadness" },
+            { sentence: "I’m feeling a bit blue.", meaning: "Expressing sadness" },
+            { sentence: "I’m heartbroken.", meaning: "Expressing sadness" },
+            { sentence: "I’m walking on air!", meaning: "Expressing enjoyment or happiness" },
+            { sentence: "I can’t stop smiling!", meaning: "Expressing enjoyment or happiness" },
+            { sentence: "I’m torn between … and …", meaning: "Expressing indecision" },
+            { sentence: "I’m on the fence (about) …", meaning: "Expressing indecision" },
+            { sentence: "I’m having second thoughts.", meaning: "Expressing indecision" },
+            { sentence: "I can’t make up my mind", meaning: "Expressing indecision" },
+            { sentence: "On the one hand, … but on the other hand, …", meaning: "Expressing indecision" },
+            { sentence: "I can’t put my finger on it, but …", meaning: "Expressing indecision" },
+            { sentence: "You’re spot on", meaning: "Expressing agreement" },
+            { sentence: "That’s what I was going to say! /Absolutely!", meaning: "Expressing agreement" },
+            { sentence: "It doesn’t grab me", meaning: "Expressing disagreement" },
+            { sentence: "I think we’re on the wrong track", meaning: "Expressing disagreement" },
+            { sentence: "That’s a good point, but …", meaning: "Expressing disagreement" },
+            { sentence: "Ok, but another option might be …", meaning: "Expressing disagreement" },
+            { sentence: "Seriously?!", meaning: "Expressing disagreement" },
+            { sentence: "So, let’s make a decision on this", meaning: "Reaching a decision" },
+            { sentence: "Okay, so shall we go with…?", meaning: "Reaching a decision" },
+            { sentence: "It looks as if we agree that …", meaning: "Reaching a decision" },
+            { sentence: "On the whole, …", meaning: "Talking about what is generally true" },
+            { sentence: "In general, …", meaning: "Talking about what is generally true" },
+            { sentence: "In some/many/most cases, …", meaning: "Talking about what is generally true" },
+            { sentence: "By and large, …", meaning: "Talking about what is generally true" },
+            { sentence: "Broadly speaking, …", meaning: "Talking about what is generally true" },
+            { sentence: "More often than not, …", meaning: "Talking about what is generally true" },
+            { sentence: "Nine times out out of ten, …", meaning: "Talking about what is generally true" },
+            { sentence: "90 percent of the time, …", meaning: "Talking about what is generally true" },
+            { sentence: "To some/a great extent, …", meaning: "Talking about what is generally true" },
+            { sentence: "… tend to think/say/believe …", meaning: "Talking about what is generally true" },
+            { sentence: "There’s a tendency for … to …", meaning: "Talking about what is generally true" },
+            { sentence: "This is a bit of a sweeping statement, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "I may be overgeneralising, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "You might think this is an overgeneralisation, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "You’ll never believe what happened to me . . .", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "That reminds me of (a time when) … .", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "Have I ever told you about …?", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "A friend of a friend told me this story.", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "I was travelling the bus, when ...", meaning: "Giving background information" },
+            { sentence: "Well, I’m not sure if you know …, but …", meaning: "Giving background information" },
+            { sentence: "There was this guy who …", meaning: "Giving background information" },
+            { sentence: "Anyway, to cut a long story short, …", meaning: "Introducing a turning point" },
+            { sentence: "Suddenly, …", meaning: "Introducing a turning point" },
+            { sentence: "No sooner had … than …", meaning: "Introducing a turning point" },
+            { sentence: "Hardly had we … when …", meaning: "Introducing a turning point" },
+            { sentence: "It turned out that …", meaning: "Introducing a turning point" },
+            { sentence: "Before we knew what was happening …", meaning: "Introducing a turning point" },
+            { sentence: "Guess what?", meaning: "Introducing a turning point" },
+            { sentence: "Obviously, I was a bit taken aback.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "I couldn’t believe what was happening.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "Obviously/Presumably/Unbelievably, etc.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "And then, to top it all, …", meaning: "Showing the speaker’s attitude" },
+            { sentence: "I mean – I’ve done it, haven’t you?", meaning: "Showing the speaker’s attitude" },
+            { sentence: "No word of a lie!", meaning: "Showing the speaker’s attitude" },
+            { sentence: "Would you believe it?", meaning: "Showing the speaker’s attitude" },
+            { sentence: "It was probably the most embarrassing moment of my life!", meaning: "Rounding off the anecdote" },
+            { sentence: "I’ll never forget …", meaning: "Rounding off the anecdote" },
+            { sentence: "I’ll never … again.", meaning: "Rounding off the anecdote" }
+
+
+          ],
+          "المرحلة السادسة عشر (بداية الفصل الثاني)": [
+
+            { sentence: "excess", meaning: "Additional and not needed because there is already enough of something" },
+            { sentence: "confined", meaning: "Very small and restricted, surrounded by walls." },
+            { sentence: "compact", meaning: "Small, but arranged so that everything fits neatly into the space available" },
+            { sentence: "densely populated", meaning: "(In a city) having a lot of people living close together." },
+            { sentence: "cramped", meaning: "Not having enough space." },
+            { sentence: "medium-sized", meaning: "Neither small, nor large." }
+
+          ],
+          "المرحلة السابعة عشر": [
+            { sentence: "It’s advisable to …", meaning: "Explaining what to do" },
+            { sentence: "The first thing you do is …", meaning: "Explaining what to do" },
+            { sentence: "When/Once you’ve done that, …", meaning: "Explaining what to do" },
+            { sentence: "What you do is …", meaning: "Explaining what to do" },
+            { sentence: "All you have to do is …", meaning: "Explaining what to do" },
+            { sentence: "The key/main thing to remember is …", meaning: "Explaining what to do" },
+            { sentence: "It’s vital/essential that you …", meaning: "Explaining what to do" },
+            { sentence: "Make sure you don’t …", meaning: "Explaining what not to do" },
+            { sentence: "Try to avoid (+ -ing) …", meaning: "Explaining what not to do" },
+            { sentence: "I’d advise you not to …", meaning: "Explaining what not to do" },
+            { sentence: "There’s no need to …", meaning: "Explaining what not to do" },
+            { sentence: "Whatever you do, don’t …", meaning: "Explaining what not to do" },
+            { sentence: "And that’s it.", meaning: "Finishing the instructions" },
+            { sentence: "As far as I’m concerned , …", meaning: "Less strong opinion" }
+          ],
+          "المرحلة الثامنة عشر": [
+            { sentence: "industrious", meaning: "Being busy or working very hard" },
+            { sentence: "commission", meaning: "Money that is paid to a salesperson for selling something" },
+            { sentence: "intern", meaning: "A (usually young) person who does a job to get experience of it and to learn" },
+            { sentence: "integral", meaning: "Very important to, or an essential part of, something" },
+            { sentence: "ill-equipped", meaning: "Not having the correct tools or skills to do something" },
+            { sentence: "anonymous", meaning: "referring to someone whose name is not known or not made public" },
+            { sentence: "proceeds", meaning: "the total money received from selling or organising something" },
+            { sentence: "foundation", meaning: "an organisation started for a specific purpose, such as research" }
+
+          ],
+          "المرحلة التاسعة عشر": [
+            { sentence: "It goes without saying that …", meaning: "Strong opinion" },
+            { sentence: "Without a shadow of a doubt, …", meaning: "Strong opinion" },
+            { sentence: "Frankly , I think it’s obvious that …", meaning: "Strong opinion" },
+            { sentence: "As far as I’m concerned , …", meaning: "Less strong opinion" },
+            { sentence: "It’s a good idea in principle , but …", meaning: "Counter opinion" },
+            { sentence: "I can see where they’re/you’re coming from, but …", meaning: "Counter opinion" },
+            { sentence: "I’m no expert , but … / I tend to think (that) …", meaning: "Tentative opinion" },
+            { sentence: "I’m inclined to think (that) …", meaning: "Tentative opinion" },
+            { sentence: "That’s debatable , isn’t it?", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "You’re entitled to your opinion, but …", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "Are you saying that …?", meaning: "Challenging somebody else’s opinion" }
+          ],
+          "المرحلة العشرون": [
+            { sentence: "The graph illustrates …", meaning: "Introducing data" },
+            { sentence: "In this graph, we can see …", meaning: "Introducing data" },
+            { sentence: "• The number of/Sales/Users increased/rose/grew/went up …", meaning: "Describing changes over time" },
+            { sentence: "• The number of/Sales/Users declined/decreased/went down/ dropped …", meaning: "Describing changes over time" },
+            { sentence: "There is/has been/was/will be a … … slight/sharp/steady/gradual/dramatic …", meaning: "Describing changes over time" },
+            { sentence: "Overall, the trend in … is upwards/downwards.", meaning: "Summarising data" },
+            { sentence: "During the period ...", meaning: "Summarising data" },
+            { sentence: "It is noticeable that …", meaning: "Summarising data" },
+            { sentence: "Are you saying that …?", meaning: "Challenging somebody else’s opinion" }
+          ],
+          "المرحلة الواحدة والعشرون": [
+            { sentence: "obsolete", meaning: "Not in use any more because a newer invention exists" },
+            { sentence: "bugs or glitches", meaning: "Small problems that prevent a device from working well." },
+            { sentence: "functionality", meaning: "Everything a piece of software can do." },
+            { sentence: "outdated", meaning: "Old-fashioned." },
+            { sentence: "state-of-the-art/latest", meaning: "Most modern." },
+            { sentence: "latest/state-of-the-art", meaning: "Using the most recent ideas and methods." },
+            { sentence: "handle", meaning: "Deal with." },
+            { sentence: "compatibility", meaning: "The ability of one piece of equipment/ software to be used with another." },
+            { sentence: "upgrade", meaning: "Change for something newer or better." },
+            { sentence: "backed up", meaning: "Stored on a computer/other device so it won’t be lost." }
+          ],
+          "المرحلة الثانية والعشرون": [
+            { sentence: "hold down", meaning: "keep" },
+            { sentence: "fitted in", meaning: "felt part of the group" },
+            { sentence: "ate away at (her)", meaning: "made her feel very bad." },
+            { sentence: "broke off (from)", meaning: "stopped" },
+            { sentence: "ended up", meaning: "finished by" },
+            { sentence: "bump into", meaning: "see" },
+            { sentence: "Going through", meaning: "Experiencing" },
+            { sentence: "Calm down", meaning: "Relax" },
+            { sentence: "come up against", meaning: "encounter" }
+          ],
+          "المرحلة الثالثة والعشرون": [
+            { sentence: "took it for granted", meaning: "Believed something without even thinking about it." },
+            { sentence: "make himself understood", meaning: "Communicate effectively." },
+            { sentence: "had no choice but to", meaning: "Was forced to do something." },
+            { sentence: "got off (relatively) lightly", meaning: "Experienced less harm than might be expected." },
+            { sentence: "done the trick", meaning: "Had the necessary result he wanted." },
+            { sentence: "took its toll (on)", meaning: "Caused harm or suffering." },
+            { sentence: "(not) have a clue", meaning: "Be unable to guess something." },
+            { sentence: "take his mind of", meaning: "Stop him from worrying about something" },
+            { sentence: "gone through the ordeal", meaning: "Had a very difficult or painful experience." },
+            { sentence: "considered his options", meaning: "Thought carefully about what to do." },
+            { sentence: "kept him going", meaning: "Helped him to continue, despite the difficult situation." },
+            { sentence: "ordeal", meaning: "a terrible or painful experience that continues for a period of time" },
+            { sentence: "sea bed", meaning: "the land at the bottom of the sea" },
+            { sentence: "supplies", meaning: "food and other ordinary goods needed by people every day" },
+            { sentence: "the cabinet", meaning: "the important ministers who control government policy" },
+            { sentence: "constitution", meaning: "the principles and ideas by which a country agrees to be governed" },
+            { sentence: "draft bill", meaning: "the first version of a proposed law" },
+            { sentence: "legislation", meaning: "the process of making laws" }
+          ],
+          "المرحلة الرابعة والعشرون": [
+            { sentence: "while", meaning: "Conjunctions of contrast" },
+            { sentence: "whereas", meaning: "Conjunctions of contrast" },
+            { sentence: "although", meaning: "Conjunctions of concession" },
+            { sentence: "even though", meaning: "Conjunctions of concession" },
+            { sentence: "despite", meaning: "Prepositions of contrast" },
+            { sentence: "in spite of", meaning: "Prepositions of contrast" },
+            { sentence: "however", meaning: "Adverbs of contrast" },
+            { sentence: "nevertheless", meaning: "Adverbs of contrast" },
+            { sentence: "nonetheless", meaning: "Adverbs of contrast" }
+          ],
+          "الفصل الثاني كاملًا": [
+            { sentence: "excess", meaning: "Additional and not needed because there is already enough of something" },
+            { sentence: "confined", meaning: "Very small and restricted, surrounded by walls." },
+            { sentence: "compact", meaning: "Small, but arranged so that everything fits neatly into the space available" },
+            { sentence: "densely populated", meaning: "(In a city) having a lot of people living close together." },
+            { sentence: "cramped", meaning: "Not having enough space." },
+            { sentence: "medium-sized", meaning: "Neither small, nor large." },
+            { sentence: "It’s advisable to …", meaning: "Explaining what to do" },
+            { sentence: "The first thing you do is …", meaning: "Explaining what to do" },
+            { sentence: "When/Once you’ve done that, …", meaning: "Explaining what to do" },
+            { sentence: "What you do is …", meaning: "Explaining what to do" },
+            { sentence: "All you have to do is …", meaning: "Explaining what to do" },
+            { sentence: "The key/main thing to remember is …", meaning: "Explaining what to do" },
+            { sentence: "It’s vital/essential that you …", meaning: "Explaining what to do" },
+            { sentence: "Make sure you don’t …", meaning: "Explaining what not to do" },
+            { sentence: "Try to avoid (+ -ing) …", meaning: "Explaining what not to do" },
+            { sentence: "I’d advise you not to …", meaning: "Explaining what not to do" },
+            { sentence: "There’s no need to …", meaning: "Explaining what not to do" },
+            { sentence: "Whatever you do, don’t …", meaning: "Explaining what not to do" },
+            { sentence: "And that’s it.", meaning: "Finishing the instructions" },
+            { sentence: "As far as I’m concerned , …", meaning: "Less strong opinion" },
+            { sentence: "industrious", meaning: "Being busy or working very hard" },
+            { sentence: "commission", meaning: "Money that is paid to a salesperson for selling something" },
+            { sentence: "intern", meaning: "A (usually young) person who does a job to get experience of it and to learn" },
+            { sentence: "integral", meaning: "Very important to, or an essential part of, something" },
+            { sentence: "ill-equipped", meaning: "Not having the correct tools or skills to do something" },
+            { sentence: "anonymous", meaning: "referring to someone whose name is not known or not made public" },
+            { sentence: "proceeds", meaning: "the total money received from selling or organising something" },
+            { sentence: "foundation", meaning: "an organisation started for a specific purpose, such as research" },
+            { sentence: "It goes without saying that …", meaning: "Strong opinion" },
+            { sentence: "Without a shadow of a doubt, …", meaning: "Strong opinion" },
+            { sentence: "Frankly , I think it’s obvious that …", meaning: "Strong opinion" },
+            { sentence: "As far as I’m concerned , …", meaning: "Less strong opinion" },
+            { sentence: "It’s a good idea in principle , but …", meaning: "Counter opinion" },
+            { sentence: "I can see where they’re/you’re coming from, but …", meaning: "Counter opinion" },
+            { sentence: "I’m no expert , but … / I tend to think (that) …", meaning: "Tentative opinion" },
+            { sentence: "I’m inclined to think (that) …", meaning: "Tentative opinion" },
+            { sentence: "That’s debatable , isn’t it?", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "You’re entitled to your opinion, but …", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "Are you saying that …?", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "The graph illustrates …", meaning: "Introducing data" },
+            { sentence: "In this graph, we can see …", meaning: "Introducing data" },
+            { sentence: "• The number of … /Sales … /Users … ➚ … increased/rose/grew/went up …", meaning: "Describing changes over time" },
+            { sentence: "• The number of … /Sales … /Users … ➘ … declined/decreased/went down/ dropped …", meaning: "Describing changes over time" },
+            { sentence: "There is/has been/was/will be a … … slight/sharp/steady/gradual/dramatic …", meaning: "Describing changes over time" },
+            { sentence: "Overall, the trend in … is upwards/downwards.", meaning: "Summarising data" },
+            { sentence: "During the period ...", meaning: "Summarising data" },
+            { sentence: "It is noticeable that …", meaning: "Summarising data" },
+            { sentence: "obsolete", meaning: "Not in use any more because a newer invention exists" },
+            { sentence: "bugs or glitches", meaning: "Small problems that prevent a device from working well." },
+            { sentence: "functionality", meaning: "Everything a piece of software can do." },
+            { sentence: "outdated", meaning: "Old-fashioned." },
+            { sentence: "state-of-the-art/latest", meaning: "Most modern." },
+            { sentence: "latest/state-of-the-art", meaning: "Using the most recent ideas and methods." },
+            { sentence: "handle", meaning: "Deal with." },
+            { sentence: "compatibility", meaning: "The ability of one piece of equipment/ software to be used with another." },
+            { sentence: "upgrade", meaning: "Change for something newer or better." },
+            { sentence: "backed up", meaning: "Stored on a computer/other device so it won’t be lost." },
+            { sentence: "hold down", meaning: "keep" },
+            { sentence: "fitted in", meaning: "felt part of the group" },
+            { sentence: "ate away at (her)", meaning: "made her feel very bad." },
+            { sentence: "broke off (from)", meaning: "stopped" },
+            { sentence: "ended up", meaning: "finished by" },
+            { sentence: "bump into", meaning: "see" },
+            { sentence: "Going through", meaning: "Experiencing" },
+            { sentence: "Calm down", meaning: "Relax" },
+            { sentence: "come up against", meaning: "encounter" },
+            { sentence: "took it for granted", meaning: "Believed something without even thinking about it." },
+            { sentence: "make himself understood", meaning: "Communicate effectively." },
+            { sentence: "had no choice but to", meaning: "Was forced to do something." },
+            { sentence: "got off (relatively) lightly", meaning: "Experienced less harm than might be expected." },
+            { sentence: "done the trick", meaning: "Had the necessary result he wanted." },
+            { sentence: "took its toll (on)", meaning: "Caused harm or suffering." },
+            { sentence: "(not) have a clue", meaning: "Be unable to guess something." },
+            { sentence: "take his mind of", meaning: "Stop him from worrying about something" },
+            { sentence: "gone through the ordeal", meaning: "Had a very difficult or painful experience." },
+            { sentence: "considered his options", meaning: "Thought carefully about what to do." },
+            { sentence: "kept him going", meaning: "Helped him to continue, despite the difficult situation." },
+            { sentence: "ordeal", meaning: "a terrible or painful experience that continues for a period of time" },
+            { sentence: "sea bed", meaning: "the land at the bottom of the sea" },
+            { sentence: "supplies", meaning: "food and other ordinary goods needed by people every day" },
+            { sentence: "the cabinet", meaning: "the important ministers who control government policy" },
+            { sentence: "constitution", meaning: "the principles and ideas by which a country agrees to be governed" },
+            { sentence: "draft bill", meaning: "the first version of a proposed law" },
+            { sentence: "legislation", meaning: "the process of making laws" },
+            { sentence: "while", meaning: "Conjunctions of contrast" },
+            { sentence: "whereas", meaning: "Conjunctions of contrast" },
+            { sentence: "although", meaning: "Conjunctions of concession" },
+            { sentence: "even though", meaning: "Conjunctions of concession" },
+            { sentence: "despite", meaning: "Prepositions of contrast" },
+            { sentence: "in spite of", meaning: "Prepositions of contrast" },
+            { sentence: "however", meaning: "Adverbs of contrast" },
+            { sentence: "nevertheless", meaning: "Adverbs of contrast" },
+            { sentence: "nonetheless", meaning: "Adverbs of contrast" }
+
+
+
+          ],
+          "كل المادة": [
+            { sentence: "terrified", meaning: "very frightened" },
+            { sentence: "astonished", meaning: "very surprised" },
+            { sentence: "exasperated", meaning: "very annoyed about something" },
+            { sentence: "livid", meaning: "very angry about something" },
+            { sentence: "tense", meaning: "unable to relax because you feel nervous" },
+            { sentence: "ecstatic", meaning: "very happy about something" },
+            { sentence: "bewildered", meaning: "very confused" },
+            { sentence: "devastated", meaning: "very unhappy about something" },
+            { sentence: "pick up", meaning: "to receive sounds, phone signals, etc." },
+            { sentence: "bring about", meaning: "to cause something to happen" },
+            { sentence: "point out", meaning: "to tell someone something you think they don’t know" },
+            { sentence: "make out", meaning: "to see something with difficulty" },
+            { sentence: "wipe out", meaning: "to destroy something completely" },
+            { sentence: "get across", meaning: "to successfully communicate a message/ an idea" },
+            { sentence: "spell out", meaning: "to explain something very clearly" },
+            { sentence: "come across", meaning: "to meet or find something or someone" },
+            { sentence: "figure out", meaning: "to solve or understand something" },
+            { sentence: "take in", meaning: "to understand and remember something you are told" },
+            { sentence: "groom", meaning: "to brush and clean fur" },
+            { sentence: "omnivore", meaning: "a living being that eats plants and animals" },
+            { sentence: "rival", meaning: "a person or group that competes with others" },
+            { sentence: "idioms", meaning: "a fixed phrase that has a special meaning which is different from the usual meaning of the individual words" },
+            { sentence: "jump down somebody’s throat", meaning: "to react angrily to something" },
+            { sentence: "put somebody on the spot", meaning: "to embarrass someone by forcing them to answer a difficult question" },
+            { sentence: "fire questions at someone", meaning: "to ask someone a lot of questions quickly" },
+            { sentence: "refuse to let something drop", meaning: "to not stop talking about something" },
+            { sentence: "insist on having the last word", meaning: "to have to make the final point" },
+            { sentence: "not get a word in edgeways", meaning: "to be unable to say anything because someone else is talking all the time" },
+            { sentence: "endangered species", meaning: "types of animals in danger of extinction" },
+            { sentence: "water scarcity", meaning: "lack of water" },
+            { sentence: "renewable energy", meaning: "power produced by wind, sun, etc." },
+            { sentence: "wind turbine", meaning: "a machine used to produce electric power" },
+            { sentence: "toxic waste", meaning: "chemicals and other harmful waste products" },
+            { sentence: "exhaust fumes", meaning: "poisonous gases produced by engines of non-electric vehicles" },
+            { sentence: "ozone layer", meaning: "part of the stratosphere which limits the amount of ultraviolet radiation reaching the Earth" },
+            { sentence: "greenhouse effect", meaning: "process by which gases trapped in the atmosphere cause the planet to heat up" },
+            { sentence: "poacher", meaning: "someone who illegally catches animals" },
+            { sentence: "dystopia", meaning: "an imaginary place where life is extremely difficult" },
+            { sentence: "Signposting", meaning: " phrases that help you follow what a speaker is saying. They can also indicate how something relates to what has already been said." },
+            { sentence: "Compound nouns", meaning: "A noun made up of two words. Usually the first part of the compound tells us the type or purpose of the second noun, e.g. climate change (climate tells us what type of change we are talking about)." },
+            { sentence: "bigoted", meaning: "intolerant of other people’s beliefs and practices" },
+            { sentence: "conceited", meaning: "constantly telling people how great you are" },
+            { sentence: "hypocritical", meaning: "saying one thing, but doing something different" },
+            { sentence: "modest", meaning: "not talking in a proud way about your achievements" },
+            { sentence: "passionate", meaning: "feeling very strongly about something" },
+            { sentence: "pushy", meaning: "determined to get what you want" },
+            { sentence: "tough", meaning: "able to deal with difficult situations" },
+            { sentence: "trustworthy", meaning: "can always be trusted" },
+            { sentence: "housekeeper", meaning: "a person whose job is to look after a house" },
+            { sentence: "orphan", meaning: "a child whose parents have died" },
+            { sentence: "be the peacemaker", meaning: "to help other people resolve an argument" },
+            { sentence: "blow things out of proportion", meaning: "to react as if what has happened is much worse than it is" },
+            { sentence: "burst into tears", meaning: "to suddenly start crying" },
+            { sentence: "have a go at somebody", meaning: "to criticise someone" },
+            { sentence: "make a fuss of somebody", meaning: "to give someone a lot of attention" },
+            { sentence: "mess about", meaning: "to behave in a silly way" },
+            { sentence: "show off", meaning: "to try and impress somebody" },
+            { sentence: "tell somebody off", meaning: "to speak to somebody angrily about something wrong that they have done" },
+            { sentence: "wind somebody up", meaning: "to say things in order to annoy somebody" },
+            { sentence: "make ends meet", meaning: "to have just enough money to buy what you need" },
+            { sentence: "a subsistence", meaning: "to have just enough money to buy what you need" },
+            { sentence: "hand-to-mouth", meaning: "to have just enough money to buy what you need" },
+            { sentence: "living day-to-day", meaning: "dealing with things without thinking about the future" },
+            { sentence: "went hungry", meaning: "didn’t have enough food" },
+            { sentence: "huddled together", meaning: "sat or stood very close to other people" },
+            { sentence: "gathered together", meaning: "sat or stood very close to other people" },
+            { sentence: "beg", meaning: "ask for money or food from strangers" },
+            { sentence: "skinny", meaning: "very thin" },
+            { sentence: "malnourished", meaning: "very thin" },
+            { sentence: "feel at home", meaning: "be comfortable in a particular place" },
+            { sentence: "sense of belonging", meaning: "be comfortable in a particular place" },
+            { sentence: "hard-hitting", meaning: "includes strong criticism" },
+            { sentence: "quirky", meaning: "unusual in an interesting way" },
+            { sentence: "heartbreaking", meaning: "very sad" },
+            { sentence: "newsworthy", meaning: "interesting enough to be reported" },
+            { sentence: "balanced", meaning: "considering all sides equally" },
+            { sentence: "topical", meaning: "related to things that are happening" },
+            { sentence: "off the record", meaning: "not meant to be publicly reported" },
+            { sentence: "sensational", meaning: "shocking and exciting, not serious" },
+            { sentence: "exclusive", meaning: "(a news story) published only in one place" },
+            { sentence: "heartwarming", meaning: "causing feelings of happiness" },
+            { sentence: "subject matter", meaning: "what people are talking or writing about in art, pictures, etc." },
+            { sentence: "poignant", meaning: "causing a feeling of sadness" },
+            { sentence: "capture", meaning: "succeed in showing something using pictures" },
+            { sentence: "landscape", meaning: "a view of the land or countryside" },
+            { sentence: "crop", meaning: "remove parts of a picture, leaving the most important parts" },
+            { sentence: "pose", meaning: "stay in a particular position for a photo or painting" },
+            { sentence: "evoke", meaning: "make someone remember or feel an emotion" },
+            { sentence: "peer", meaning: "to look at something closely and carefully" },
+            { sentence: "glance", meaning: "to take a quick look at something" },
+            { sentence: "spot", meaning: "to notice something or someone" },
+            { sentence: "bellow", meaning: "to shout angrily in a low deep voice" },
+            { sentence: "yell", meaning: "to shout loudly, because you are excited or angry" },
+            { sentence: "mutter", meaning: "to speak so quietly that you cannot be heard easily" },
+            { sentence: "race", meaning: "to go somewhere as quickly as possible" },
+            { sentence: "wander", meaning: "to walk in a casual way, often in no particular direction" },
+            { sentence: "clash", meaning: "a fight or strong disagreement" },
+            { sentence: "relocate", meaning: "move to a new place to live or for work" },
+            { sentence: "row", meaning: "a noisy argument or fight" },
+            { sentence: "sibling", meaning: "a brother or sister" },
+            { sentence: "flunk", meaning: "fail to do something" },
+            { sentence: "It’s been keeping me up at night.", meaning: "Expressing anxiety" },
+            { sentence: "I’m worried sick about ...", meaning: "Expressing anxiety" },
+            { sentence: "I can breathe a sigh of relief now", meaning: "Expressing relief" },
+            { sentence: "That’s a weight off my mind", meaning: "Expressing relief" },
+            { sentence: "… is driving me up the wall!", meaning: "Expressing annoyance and frustration" },
+            { sentence: "… really gets on my nerves.", meaning: "Expressing annoyance and frustration" },
+            { sentence: "I’ve had it up to here with ...", meaning: "Expressing annoyance and frustration" },
+            { sentence: "You’ve got to be kidding me!", meaning: "Expressing surprise or disbelief" },
+            { sentence: "Get out of here!", meaning: "Expressing surprise or disbelief" },
+            { sentence: "Who would have thought it?", meaning: "Expressing surprise or disbelief" },
+            { sentence: "I’m feeling a bit down in the dumps.", meaning: "Expressing sadness" },
+            { sentence: "I’m feeling a bit blue.", meaning: "Expressing sadness" },
+            { sentence: "I’m heartbroken.", meaning: "Expressing sadness" },
+            { sentence: "I’m walking on air!", meaning: "Expressing enjoyment or happiness" },
+            { sentence: "I can’t stop smiling!", meaning: "Expressing enjoyment or happiness" },
+            { sentence: "I’m torn between … and …", meaning: "Expressing indecision" },
+            { sentence: "I’m on the fence (about) …", meaning: "Expressing indecision" },
+            { sentence: "I’m having second thoughts.", meaning: "Expressing indecision" },
+            { sentence: "I can’t make up my mind", meaning: "Expressing indecision" },
+            { sentence: "On the one hand, … but on the other hand, …", meaning: "Expressing indecision" },
+            { sentence: "I can’t put my finger on it, but …", meaning: "Expressing indecision" },
+            { sentence: "You’re spot on", meaning: "Expressing agreement" },
+            { sentence: "That’s what I was going to say! /Absolutely!", meaning: "Expressing agreement" },
+            { sentence: "It doesn’t grab me", meaning: "Expressing disagreement" },
+            { sentence: "I think we’re on the wrong track", meaning: "Expressing disagreement" },
+            { sentence: "That’s a good point, but …", meaning: "Expressing disagreement" },
+            { sentence: "Ok, but another option might be …", meaning: "Expressing disagreement" },
+            { sentence: "Seriously?!", meaning: "Expressing disagreement" },
+            { sentence: "So, let’s make a decision on this", meaning: "Reaching a decision" },
+            { sentence: "Okay, so shall we go with…?", meaning: "Reaching a decision" },
+            { sentence: "It looks as if we agree that …", meaning: "Reaching a decision" },
+            { sentence: "On the whole, …", meaning: "Talking about what is generally true" },
+            { sentence: "In general, …", meaning: "Talking about what is generally true" },
+            { sentence: "In some/many/most cases, …", meaning: "Talking about what is generally true" },
+            { sentence: "By and large, …", meaning: "Talking about what is generally true" },
+            { sentence: "Broadly speaking, …", meaning: "Talking about what is generally true" },
+            { sentence: "More often than not, …", meaning: "Talking about what is generally true" },
+            { sentence: "Nine times out out of ten, …", meaning: "Talking about what is generally true" },
+            { sentence: "90 percent of the time, …", meaning: "Talking about what is generally true" },
+            { sentence: "To some/a great extent, …", meaning: "Talking about what is generally true" },
+            { sentence: "… tend to think/say/believe …", meaning: "Talking about what is generally true" },
+            { sentence: "There’s a tendency for … to …", meaning: "Talking about what is generally true" },
+            { sentence: "This is a bit of a sweeping statement, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "I may be overgeneralising, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "You might think this is an overgeneralisation, but …", meaning: "Acknowledging that you are generalising" },
+            { sentence: "You’ll never believe what happened to me . . .", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "That reminds me of (a time when) … .", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "Have I ever told you about …?", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "A friend of a friend told me this story.", meaning: "Saying that an anecdote is about to start" },
+            { sentence: "I was travelling the bus, when ...", meaning: "Giving background information" },
+            { sentence: "Well, I’m not sure if you know …, but …", meaning: "Giving background information" },
+            { sentence: "There was this guy who …", meaning: "Giving background information" },
+            { sentence: "Anyway, to cut a long story short, …", meaning: "Introducing a turning point" },
+            { sentence: "Suddenly, …", meaning: "Introducing a turning point" },
+            { sentence: "No sooner had … than …", meaning: "Introducing a turning point" },
+            { sentence: "Hardly had we … when …", meaning: "Introducing a turning point" },
+            { sentence: "It turned out that …", meaning: "Introducing a turning point" },
+            { sentence: "Before we knew what was happening …", meaning: "Introducing a turning point" },
+            { sentence: "Guess what?", meaning: "Introducing a turning point" },
+            { sentence: "Obviously, I was a bit taken aback.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "I couldn’t believe what was happening.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "Obviously/Presumably/Unbelievably, etc.", meaning: "Showing the speaker’s attitude" },
+            { sentence: "And then, to top it all, …", meaning: "Showing the speaker’s attitude" },
+            { sentence: "I mean – I’ve done it, haven’t you?", meaning: "Showing the speaker’s attitude" },
+            { sentence: "No word of a lie!", meaning: "Showing the speaker’s attitude" },
+            { sentence: "Would you believe it?", meaning: "Showing the speaker’s attitude" },
+            { sentence: "It was probably the most embarrassing moment of my life!", meaning: "Rounding off the anecdote" },
+            { sentence: "I’ll never forget …", meaning: "Rounding off the anecdote" },
+            { sentence: "I’ll never … again.", meaning: "Rounding off the anecdote" },
+            { sentence: "excess", meaning: "Additional and not needed because there is already enough of something" },
+            { sentence: "confined", meaning: "Very small and restricted, surrounded by walls." },
+            { sentence: "compact", meaning: "Small, but arranged so that everything fits neatly into the space available" },
+            { sentence: "densely populated", meaning: "(In a city) having a lot of people living close together." },
+            { sentence: "cramped", meaning: "Not having enough space." },
+            { sentence: "medium-sized", meaning: "Neither small, nor large." },
+            { sentence: "It’s advisable to …", meaning: "Explaining what to do" },
+            { sentence: "The first thing you do is …", meaning: "Explaining what to do" },
+            { sentence: "When/Once you’ve done that, …", meaning: "Explaining what to do" },
+            { sentence: "What you do is …", meaning: "Explaining what to do" },
+            { sentence: "All you have to do is …", meaning: "Explaining what to do" },
+            { sentence: "The key/main thing to remember is …", meaning: "Explaining what to do" },
+            { sentence: "It’s vital/essential that you …", meaning: "Explaining what to do" },
+            { sentence: "Make sure you don’t …", meaning: "Explaining what not to do" },
+            { sentence: "Try to avoid (+ -ing) …", meaning: "Explaining what not to do" },
+            { sentence: "I’d advise you not to …", meaning: "Explaining what not to do" },
+            { sentence: "There’s no need to …", meaning: "Explaining what not to do" },
+            { sentence: "Whatever you do, don’t …", meaning: "Explaining what not to do" },
+            { sentence: "And that’s it.", meaning: "Finishing the instructions" },
+            { sentence: "As far as I’m concerned , …", meaning: "Less strong opinion" },
+            { sentence: "industrious", meaning: "Being busy or working very hard" },
+            { sentence: "commission", meaning: "Money that is paid to a salesperson for selling something" },
+            { sentence: "intern", meaning: "A (usually young) person who does a job to get experience of it and to learn" },
+            { sentence: "integral", meaning: "Very important to, or an essential part of, something" },
+            { sentence: "ill-equipped", meaning: "Not having the correct tools or skills to do something" },
+            { sentence: "anonymous", meaning: "referring to someone whose name is not known or not made public" },
+            { sentence: "proceeds", meaning: "the total money received from selling or organising something" },
+            { sentence: "foundation", meaning: "an organisation started for a specific purpose, such as research" },
+            { sentence: "It goes without saying that …", meaning: "Strong opinion" },
+            { sentence: "Without a shadow of a doubt, …", meaning: "Strong opinion" },
+            { sentence: "Frankly , I think it’s obvious that …", meaning: "Strong opinion" },
+            { sentence: "As far as I’m concerned , …", meaning: "Less strong opinion" },
+            { sentence: "It’s a good idea in principle , but …", meaning: "Counter opinion" },
+            { sentence: "I can see where they’re/you’re coming from, but …", meaning: "Counter opinion" },
+            { sentence: "I’m no expert , but … / I tend to think (that) …", meaning: "Tentative opinion" },
+            { sentence: "I’m inclined to think (that) …", meaning: "Tentative opinion" },
+            { sentence: "That’s debatable , isn’t it?", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "You’re entitled to your opinion, but …", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "Are you saying that …?", meaning: "Challenging somebody else’s opinion" },
+            { sentence: "The graph illustrates …", meaning: "Introducing data" },
+            { sentence: "In this graph, we can see …", meaning: "Introducing data" },
+            { sentence: "• The number of … /Sales … /Users … ➚ … increased/rose/grew/went up …", meaning: "Describing changes over time" },
+            { sentence: "• The number of … /Sales … /Users … ➘ … declined/decreased/went down/ dropped …", meaning: "Describing changes over time" },
+            { sentence: "There is/has been/was/will be a … … slight/sharp/steady/gradual/dramatic …", meaning: "Describing changes over time" },
+            { sentence: "Overall, the trend in … is upwards/downwards.", meaning: "Summarising data" },
+            { sentence: "During the period ...", meaning: "Summarising data" },
+            { sentence: "It is noticeable that …", meaning: "Summarising data" },
+            { sentence: "obsolete", meaning: "Not in use any more because a newer invention exists" },
+            { sentence: "bugs or glitches", meaning: "Small problems that prevent a device from working well." },
+            { sentence: "functionality", meaning: "Everything a piece of software can do." },
+            { sentence: "outdated", meaning: "Old-fashioned." },
+            { sentence: "state-of-the-art/latest", meaning: "Most modern." },
+            { sentence: "latest/state-of-the-art", meaning: "Using the most recent ideas and methods." },
+            { sentence: "handle", meaning: "Deal with." },
+            { sentence: "compatibility", meaning: "The ability of one piece of equipment/ software to be used with another." },
+            { sentence: "upgrade", meaning: "Change for something newer or better." },
+            { sentence: "backed up", meaning: "Stored on a computer/other device so it won’t be lost." },
+            { sentence: "hold down", meaning: "keep" },
+            { sentence: "fitted in", meaning: "felt part of the group" },
+            { sentence: "ate away at (her)", meaning: "made her feel very bad." },
+            { sentence: "broke off (from)", meaning: "stopped" },
+            { sentence: "ended up", meaning: "finished by" },
+            { sentence: "bump into", meaning: "see" },
+            { sentence: "Going through", meaning: "Experiencing" },
+            { sentence: "Calm down", meaning: "Relax" },
+            { sentence: "come up against", meaning: "encounter" },
+            { sentence: "took it for granted", meaning: "Believed something without even thinking about it." },
+            { sentence: "make himself understood", meaning: "Communicate effectively." },
+            { sentence: "had no choice but to", meaning: "Was forced to do something." },
+            { sentence: "got off (relatively) lightly", meaning: "Experienced less harm than might be expected." },
+            { sentence: "done the trick", meaning: "Had the necessary result he wanted." },
+            { sentence: "took its toll (on)", meaning: "Caused harm or suffering." },
+            { sentence: "(not) have a clue", meaning: "Be unable to guess something." },
+            { sentence: "take his mind of", meaning: "Stop him from worrying about something" },
+            { sentence: "gone through the ordeal", meaning: "Had a very difficult or painful experience." },
+            { sentence: "considered his options", meaning: "Thought carefully about what to do." },
+            { sentence: "kept him going", meaning: "Helped him to continue, despite the difficult situation." },
+            { sentence: "ordeal", meaning: "a terrible or painful experience that continues for a period of time" },
+            { sentence: "sea bed", meaning: "the land at the bottom of the sea" },
+            { sentence: "supplies", meaning: "food and other ordinary goods needed by people every day" },
+            { sentence: "the cabinet", meaning: "the important ministers who control government policy" },
+            { sentence: "constitution", meaning: "the principles and ideas by which a country agrees to be governed" },
+            { sentence: "draft bill", meaning: "the first version of a proposed law" },
+            { sentence: "legislation", meaning: "the process of making laws" },
+            { sentence: "while", meaning: "Conjunctions of contrast" },
+            { sentence: "whereas", meaning: "Conjunctions of contrast" },
+            { sentence: "although", meaning: "Conjunctions of concession" },
+            { sentence: "even though", meaning: "Conjunctions of concession" },
+            { sentence: "despite", meaning: "Prepositions of contrast" },
+            { sentence: "in spite of", meaning: "Prepositions of contrast" },
+            { sentence: "however", meaning: "Adverbs of contrast" },
+            { sentence: "nevertheless", meaning: "Adverbs of contrast" },
+            { sentence: "nonetheless", meaning: "Adverbs of contrast" }
+          ]
+        }
+      };
+      const meaningMap = {};
+      Object.values(stages.arabic).flat().forEach(o => meaningMap[o.en] = o.ar);
+      Object.values(stages.english).flat().forEach(o => meaningMap[o.sentence] = o.meaning);
+
+      let stats = JSON.parse(localStorage.getItem('stats') || '{"correct":0,"wrong":0,"errors":{}}');
+      let totalPts = +localStorage.getItem('totalPts') || 0;
+      let bestPts = +localStorage.getItem('bestPts') || 0;
+      let mode = 'arabic', stage = '', diff = 'easy';
+      let lives, score, mult, errCount, pool, currentItem;
+      let isErrorQuiz = false, errorList = [];
+
+      const confInst = confetti.create(document.getElementById('confetti'), { resize: true });
+      let animId = null;
+      function cancelAnim() { if (animId) cancelAnimationFrame(animId); }
+
+      const screens = { main: 'mainMenu', stats: 'statsMenu', settings: 'settingsMenu', lang: 'langMenu', stage: 'stageMenu', diff: 'diffMenu', game: 'gameMenu' };
+      function showScreen(id) {
+        cancelAnim();
+        Object.values(screens).forEach(s => document.getElementById(s).classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('endModal').classList.remove('active');
+      }
+
+      function updateStatsUI() {
+        const c = stats.correct, w = stats.wrong, t = c + w;
+        document.getElementById('statCorrect').textContent = c;
+        document.getElementById('statWrong').textContent = w;
+        document.getElementById('statRate').textContent = t ? Math.round(c / t * 100) + '%' : '0%';
+        document.getElementById('statFail').textContent = t ? Math.round(w / t * 100) + '%' : '0%';
+        document.getElementById('totalPts').textContent = totalPts;
+        document.getElementById('bestPts').textContent = bestPts;
+        const ar = [], enArr = [];
+        Object.entries(stats.errors).forEach(([w, c]) => {
+          const m = meaningMap[w] || '';
+          if (/[ء-ي]/.test(m)) ar.push([w, m, c]); else enArr.push([w, m, c]);
+        });
+        const bAr = document.getElementById('errorsAr'), bEn = document.getElementById('errorsEn');
+        bAr.innerHTML = ''; bEn.innerHTML = '';
+        if (!ar.length) bAr.innerHTML = '<tr><td colspan="3">-</td></tr>';
+        else ar.sort((a, b) => b[2] - a[2]).forEach(r => bAr.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`);
+        if (!enArr.length) bEn.innerHTML = '<tr><td colspan="3">-</td></tr>';
+        else enArr.sort((a, b) => b[2] - a[2]).forEach(r => bEn.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`);
+        localStorage.setItem('stats', JSON.stringify(stats));
+        localStorage.setItem('totalPts', totalPts);
+        localStorage.setItem('bestPts', bestPts);
+      }
+
+      // Bindings
+      document.getElementById('btnStart').onclick = () => showScreen('langMenu');
+      document.getElementById('btnSettings').onclick = () => showScreen('settingsMenu');
+      document.getElementById('btnStats').onclick = () => { updateStatsUI(); showScreen('statsMenu'); };
+      document.getElementById('btnBackStats').onclick = () => showScreen('mainMenu');
+      document.getElementById('btnShareStats').onclick = () => {
+        html2canvas(document.getElementById('shareArea')).then(c => c.toBlob(b => { const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'stats.png'; a.click(); }));
+      };
+      document.getElementById('btnQuizAr').onclick = () => {
+        mode = 'arabic';
+        errorList = Object.keys(stats.errors).filter(w => /[ء-ي]/.test(meaningMap[w] || ''));
+        if (!errorList.length) return alert('لا أخطاء عربية');
+        isErrorQuiz = true;
+        showScreen('diffMenu');
+      };
+      document.getElementById('btnQuizEn').onclick = () => {
+        mode = 'english';
+        errorList = Object.keys(stats.errors).filter(w => !/[ء-ي]/.test(meaningMap[w] || ''));
+        if (!errorList.length) return alert('لا أخطاء إنجليزية');
+        isErrorQuiz = true;
+        showScreen('diffMenu');
+      };
+      document.getElementById('btnBackSettings').onclick = () => showScreen('mainMenu');
+      document.getElementById('toggleDark').onchange = e => document.documentElement.classList.toggle('dark-mode', e.target.checked);
+      document.getElementById('btnBackLang').onclick = () => showScreen('mainMenu');
+      document.querySelectorAll('.langBtn').forEach(b => b.onclick = () => { mode = b.dataset.lang; renderStages(); showScreen('stageMenu'); });
+
+      function renderStages() {
+        const cont = document.getElementById('stageList'); cont.innerHTML = '';
+        Object.keys(stages[mode]).forEach(name => {
+          const d = document.createElement('div'); d.className = 'stage-btn'; d.textContent = name;
+          const ss = JSON.parse(localStorage.getItem('stageStats') || '{}');
+          const errs = ss[mode + '_' + name] != null ? ss[mode + '_' + name] : 3;
+          const sp = document.createElement('span'); sp.className = 'stars';
+          sp.textContent = '★'.repeat(3 - errs) + '☆'.repeat(errs);
+          d.appendChild(sp);
+          d.onclick = () => { stage = name; showScreen('diffMenu'); };
+          cont.appendChild(d);
+        });
+      }
+      document.getElementById('btnBackStage').onclick = () => showScreen('langMenu');
+      document.getElementById('btnBackDiff').onclick = () => { isErrorQuiz = false; showScreen('stageMenu'); };
+      document.querySelectorAll('.diffBtn').forEach(b => b.onclick = () => {
+        diff = b.dataset.diff; lives = 3; score = 0; mult = 1; errCount = 0;
+        pool = isErrorQuiz
+          ? errorList.map(w => [].concat(...Object.values(stages[mode])).find(o => (mode === 'arabic' ? o.en : o.sentence) === w)).filter(Boolean)
+          : stages[mode][stage].slice();
+        showScreen('gameMenu'); renderHearts(); renderHUD(); nextWord();
+      });
+
+      function renderHearts() { document.getElementById('heartContainer').innerHTML = '<div class="heart"></div>'.repeat(lives); }
+      function renderHUD() { document.getElementById('scoreDisp').textContent = score; document.getElementById('multDisp').textContent = mult.toFixed(1); }
+
+      function nextWord() {
+        const gc = document.getElementById('gameContainer'); gc.innerHTML = '';
+        if (!pool.length) return finishStage(true);
+        const idx = Math.floor(Math.random() * pool.length);
+        currentItem = pool.splice(idx, 1)[0];
+        const wd = document.createElement('div'); wd.className = 'word';
+        wd.textContent = mode === 'arabic' ? currentItem.en : currentItem.sentence;
+        gc.appendChild(wd);
+        renderChoices(); animateWord(wd);
+      }
+      function renderChoices() {
+        const prop = mode === 'arabic' ? 'ar' : 'meaning'; const corr = currentItem[prop];
+        const src = isErrorQuiz ? pool.concat(currentItem) : stages[mode][stage];
+        const opts = [corr]; while (opts.length < 4) {
+          const pick = src[Math.floor(Math.random() * src.length)][prop]; if (!opts.includes(pick)) opts.push(pick);
+        }
+        opts.sort(() => Math.random() - .5);
+        const cc = document.getElementById('choicesContainer'); cc.innerHTML = '';
+        opts.forEach(txt => {
+          const b = document.createElement('button'); b.className = 'btn'; b.textContent = txt;
+          b.onclick = () => checkAnswer(b, txt, corr, false);
+          cc.appendChild(b);
+        });
+      }
+      function animateWord(el) {
+        let y = 0, speed = { easy: 0.3, medium: 1, hard: 1.8 }[diff];
+        const limit = document.getElementById('gameContainer').offsetHeight - 40;
+        function step() {
+          y += speed; el.style.top = y + 'px';
+          if (y < limit) animId = requestAnimationFrame(step);
+          else checkAnswer(null, null, null, true);
+        }
+        animId = requestAnimationFrame(step);
+      }
+      function checkAnswer(btn, sel, corr, timed) {
+        cancelAnim(); document.querySelectorAll('#choicesContainer .btn').forEach(b => b.disabled = true);
+        const correct = (!timed && sel === corr);
+        if (correct) { playTone(523, 0.1); confInst({ particleCount: 80, spread: 60 }); score += 10 * mult; totalPts += 10 * mult; mult = Math.min(mult + 0.1, 3); stats.correct++; }
+        else {
+          if (btn) { playTone(330, 0.2); btn.classList.add('incorrect'); }
+          document.querySelectorAll('#choicesContainer .btn').forEach(b => { if (b.textContent === corr) b.classList.add('correct'); });
+          lives--; errCount++; stats.wrong++; mult = 1;
+          const key = mode === 'arabic' ? currentItem.en : currentItem.sentence;
+          stats.errors[key] = (stats.errors[key] || 0) + 1;
+          if (lives <= 0) return finishStage(false);
+        }
+        localStorage.setItem('stats', JSON.stringify(stats)); localStorage.setItem('totalPts', totalPts);
+        renderHearts(); renderHUD(); setTimeout(nextWord, 600);
+      }
+      function finishStage(win) {
+        if (score > bestPts) { bestPts = score; localStorage.setItem('bestPts', bestPts); }
+        document.getElementById('modalTitle').textContent = win ? '🎉 انتهيت!' : '💔 انتهت المحاولات';
+        document.getElementById('modalMsg').textContent = win ? 'أكملت بنجاح!' : 'حاول مجدداً.';
+        document.getElementById('modalStars').textContent = '★'.repeat(Math.max(0, 3 - errCount)) + '☆'.repeat(errCount);
+        const ss = JSON.parse(localStorage.getItem('stageStats') || '{}'); ss[mode + '_' + stage] = Math.min(errCount, 3);
+        localStorage.setItem('stageStats', JSON.stringify(ss)); document.getElementById('endModal').classList.add('active');
+      }
+      document.getElementById('btnRetry').onclick = () => { document.getElementById('endModal').classList.remove('active'); document.querySelector(`.diffBtn[data-diff="${diff}"]`).click(); };
+      document.getElementById('btnMain').onclick = () => { document.getElementById('endModal').classList.remove('active'); showScreen('mainMenu'); isErrorQuiz = false; };
+      document.getElementById('btnRestart').onclick = () => showScreen('diffMenu');
+      document.getElementById('btnHome').onclick = () => { showScreen('mainMenu'); isErrorQuiz = false; };
+      function playTone(freq, dur) { const ctx = new (window.AudioContext || window.webkitAudioContext)(), osc = ctx.createOscillator(), g = ctx.createGain(); osc.connect(g); g.connect(ctx.destination); osc.frequency.value = freq; g.gain.value = 0.3; osc.start(); osc.stop(ctx.currentTime + dur); }
+      showScreen('mainMenu');
+    });
+  </script>
+</body>
+
+</html>
